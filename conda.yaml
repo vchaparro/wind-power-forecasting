@@ -1,0 +1,11 @@
+
+name: mlprojects
+channels:
+  - defaults
+dependencies:
+  - python=3.6
+  - pip:
+      - kedro==0.16.2
+      - databricks-connect>=6.6.0
+      - mlflow==1.9.1
+      - scikit-learn

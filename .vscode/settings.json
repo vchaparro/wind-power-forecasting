@@ -1,0 +1,7 @@
+{
+    "python.pythonPath": "C:\\Users\\Quark\\.conda\\envs\\TFM-env\\python.exe",
+    "yaml.schemas": {
+      "https://raw.githubusercontent.com/quantumblacklabs/kedro/develop/static/jsonschema/kedro-catalog-0.16.json": "conf/**/*catalog*"
+      }
+    
+}
