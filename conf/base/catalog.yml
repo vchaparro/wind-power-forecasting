@@ -45,3 +45,28 @@ y_train_WF1:
     sep: ","
   save_args:
     index: False
+
+## Data for initial Exploratory Data Analysis (EDA)
+df_WF1:
+  type: pandas.CSVDataSet
+  filepath: data/02_intermediate/for_EDA_by_WF/df_WF1.csv
+
+df_WF2:
+  type: pandas.CSVDataSet
+  filepath: data/02_intermediate/for_EDA_by_WF/df_WF2.csv
+
+df_WF3:
+  type: pandas.CSVDataSet
+  filepath: data/02_intermediate/for_EDA_by_WF/df_WF3.csv
+
+df_WF4:
+  type: pandas.CSVDataSet
+  filepath: data/02_intermediate/for_EDA_by_WF/df_WF4.csv
+
+df_WF5:
+  type: pandas.CSVDataSet
+  filepath: data/02_intermediate/for_EDA_by_WF/df_WF5.csv
+
+df_WF6:
+  type: pandas.CSVDataSet
+  filepath: data/02_intermediate/for_EDA_by_WF/df_WF6.csv

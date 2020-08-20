@@ -1,6 +1,6 @@
 import pandas as pd
 from functools import wraps
-from typing import Callable
+from typing import Callable, Dict, List
 import time
 import logging
 import numpy as np
@@ -13,13 +13,13 @@ from metpy.units import units
 import matplotlib.pyplot as plt
 from operational_analysis.toolkits import filters
 from operational_analysis.toolkits import power_curve
-from typing import Dict, List
 
 
 def log_running_time(func: Callable) -> Callable:
     """Decorator for logging node execution time.
         Args:
             func: Function to be executed.
+            
         Returns:
             Decorator for logging the running time.
     """
@@ -42,6 +42,7 @@ def _get_wind_speed(x: pd.DataFrame) -> float:
     
         Args:
             x: Feature data frame containing components U and V as columns.
+            
         Returns: 
             Wind speed for each pair <U,V>.
 
@@ -85,6 +86,7 @@ def get_data_by_wf(X: pd.DataFrame, y: pd.DataFrame, wf: str) -> pd.DataFrame:
             X: X_train_raw.
             y: y_train_raw. 
             wf: Wind Farm identification.
+            
         Returns:
             X, y data frames filtered by Wind Farm.
     """
@@ -109,6 +111,7 @@ def add_new_cols(new_cols: list, X: pd.DataFrame) -> pd.DataFrame:
         Args: 
             new_cols: List with the column names to be added.
             X: data frame that will be expanded with new_cols.
+            
         Returns:
             X expanded with the new columns.
             
@@ -119,16 +122,41 @@ def add_new_cols(new_cols: list, X: pd.DataFrame) -> pd.DataFrame:
     return X
 
 
-def input_missing_values(X: pd.DataFrame, X_raw: pd.DataFrame) -> pd.DataFrame:
+def _interpolate_missing_values(X: pd.DataFrame, cols: List) -> pd.DataFrame:
+    """ Imputes those missing values due to the NWP's frequency in data providing.
+
+        Args:
+            X: Data frame where missing values are being inputed. 
+            cols: list of column names of the data frame that have missing values.
+            
+        Returns:
+            X: Data frame with missing values replaced by interpolated ones.
+             
+    """
+    X.index = X["Time"]
+    del X["Time"]
+
+    for var in cols:
+        X[var].interpolate(method="time", inplace=True, limit=2, limit_direction="both")
+    X.reset_index(inplace=True)
+
+    return X
+
+
+@log_running_time
+def input_missing_values(
+    X: pd.DataFrame, X_train_raw: pd.DataFrame, cols_to_interpol: List
+) -> pd.DataFrame:
     """Impute missing values based on the gap time between forecasted timestamp and NWP run.
     
         Args:
             X: the data frame where the missing will be inputed.
+            
         Returns:
             X: the data frame with inputed missing values.
     
     """
-    cols = X_raw.columns[3:]
+    cols = X_train_raw.columns[3:]
     regex = r"NWP(?P<NWP>\d{1})_(?P<run>\d{2}h)_(?P<fc_day>D\W?\d?)_(?P<weather_var>\w{1,4})"
     p = re.compile(regex)
 
@@ -159,25 +187,8 @@ def input_missing_values(X: pd.DataFrame, X_raw: pd.DataFrame) -> pd.DataFrame:
                         X[col_name]
                     )
 
-    return X
-
-
-def interpolate_missing_values(X: pd.DataFrame, cols: List) -> pd.DataFrame:
-    """ Imputes those missing values due to the NWP's frequency in data providing.
-
-        Args:
-            X: Data frame where missing values are being inputed. 
-            cols: list of column names of the data frame that have missing values.
-        Returns:
-            X: Data frame with missing values replaced by interpolated ones.
-             
-    """
-    X.index = X["Time"]
-    del X["Time"]
-
-    for var in cols:
-        X[var].interpolate(method="time", inplace=True, limit=2, limit_direction="both")
-    X.reset_index(inplace=True)
+    # Interpolate missing values when required.
+    X = _interpolate_missing_values(X, cols)
 
     return X
 
@@ -187,6 +198,7 @@ def select_best_NWP_features(X: pd.DataFrame) -> pd.DataFrame:
 
         Args:
             X: features data frame.
+            
         Returns:
             Data frame with the best NWP features.
 
@@ -210,9 +222,8 @@ def _find_outliers(X: pd.DataFrame, y: pd.Series, parameters: Dict) -> Dict[str,
         Args:
             X: Feature data frame.
             y: target.
-            fig_id: name for the figures for the outliers plots.
-            folder: the destination folder where saving the outliers plots.
-            wf: the wind farm for we want to find outliers.
+            parameters: dictionary containing the configuration parameters.
+            
         Returns:
             outliers: dictionary with the different type of outliers found.
 
@@ -285,12 +296,14 @@ def _find_outliers(X: pd.DataFrame, y: pd.Series, parameters: Dict) -> Dict[str,
     return outliers
 
 
+@log_running_time
 def clean_outliers(X: pd.DataFrame, y: pd.Series, parameters: Dict) -> pd.DataFrame:
     """ It removes the outliers and returned cleaned X, y.
     
         Args:
             X: the feature data frame.
             y: the target.
+            
         Returns:
             Cleaned X, y.
             
@@ -323,6 +336,7 @@ def fix_negative_clct(X: pd.DataFrame) -> None:
     
         Args:
             df: the data frame containing CLCT column.
+            
         Returns:
             None, it replaces the values inplace.
     
@@ -336,6 +350,7 @@ def split_data_by_date(date: str, X: pd.DataFrame, y: pd.Series) -> Dict:
         Args:
             X: cleaned X_train features data frame.
             y: cleaned y_train target dta frame.
+            
         Returns: 
             A dictionary with the four sets (X_train, y_train, X_test, y_test).
     """
@@ -355,6 +370,7 @@ def split_data_by_date(date: str, X: pd.DataFrame, y: pd.Series) -> Dict:
     return sets
 
 
+@log_running_time
 def export_data(folder: str, WF: str, df_dict: Dict,) -> None:
     """ Export data frames to csv.
 
@@ -362,6 +378,7 @@ def export_data(folder: str, WF: str, df_dict: Dict,) -> None:
             folder: the folder where the csv files will be saved.
             WF: Wind Farm identification.
             df_dict: a dictionary with key, value pairs df name, df values.
+            
         Returns:
             None.
     """

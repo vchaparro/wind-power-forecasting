@@ -23,7 +23,8 @@ new_cols:
   ]
 
 # Columns that need interpolation for missing values.
-col_list: ["NWP2_U", "NWP2_V", "NWP3_U", "NWP3_V", "NWP3_T", "NWP4_CLCT"]
+cols_to_interpol:
+  ["NWP2_U", "NWP2_V", "NWP3_U", "NWP3_V", "NWP3_T", "NWP4_CLCT"]
 
 # Directory where saving figures by Wind Farm.
 fig_output_filepath: "./data/08_reporting/figures/"

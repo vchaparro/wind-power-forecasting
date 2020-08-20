@@ -4,7 +4,6 @@ from .nodes import (
     get_data_by_wf,
     add_new_cols,
     input_missing_values,
-    interpolate_missing_values,
     select_best_NWP_features,
     clean_outliers,
     fix_negative_clct,
@@ -31,15 +30,9 @@ def create_pipeline(**kwargs):
             ),
             node(
                 func=input_missing_values,
-                inputs=["X_by_WF_newcols", "X_train_raw"],
-                outputs="X_no_missing_values",
-                name="input_missing_values",
-            ),
-            node(
-                func=interpolate_missing_values,
-                inputs=["X_no_missing_values", "params:col_list"],
+                inputs=["X_by_WF_newcols", "X_train_raw", "params:cols_to_interpol"],
                 outputs="X_no_missing_vals",
-                name="interpolate_missing_values",
+                name="input_missing_values",
             ),
             node(
                 func=select_best_NWP_features,
@@ -71,5 +64,6 @@ def create_pipeline(**kwargs):
                 outputs=None,
                 name="export_data_to_csv",
             ),
-        ]
+        ],
+        tags="data_preparation_for_ML",
     )
