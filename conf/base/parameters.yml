@@ -1,1 +1,76 @@
+#############################################################
+## Data Engineering parameters (make data for ML and EDA)
+#############################################################
 
+# Wind Farm identification, by default empty script.
+# To be overwritten from kedro CLI.
+wf: ""
+
+# New columns to be added throught node 'add_new_columns'.
+new_cols:
+  [
+    "NWP1_U",
+    "NWP1_V",
+    "NWP1_T",
+    "NWP2_U",
+    "NWP2_V",
+    "NWP3_U",
+    "NWP3_V",
+    "NWP3_T",
+    "NWP4_U",
+    "NWP4_V",
+    "NWP4_CLCT",
+  ]
+
+# Columns that need interpolation for missing values.
+col_list: ["NWP2_U", "NWP2_V", "NWP3_U", "NWP3_V", "NWP3_T", "NWP4_CLCT"]
+
+# Directory where saving figures by Wind Farm.
+fig_output_filepath: "./data/08_reporting/figures/"
+
+# Directory where exporting to the intermediate data.
+output_filepath: "./data/02_intermediate/"
+
+# Figure identification to use when saving a figure from _save_fig function.
+fig_id: "outliers"
+
+# The date from we want to split the X and y data sets into train/test sets.
+split_date: "2019-01-13 00:00:00"
+
+# Outliers detection parameters
+WF1:
+  top_frac_max: 0.97
+  sparse_bin_width: 0.25
+  frac_std: 0.85
+  threshold_type: "scalar"
+  bottom_max: 6.0
+WF2:
+  top_frac_max: 0.97
+  sparse_bin_width: 0.15
+  frac_std: 0.8
+  threshold_type: "scalar"
+  bottom_max: 5.5
+WF3:
+  top_frac_max: 0.97
+  sparse_bin_width: 0.1
+  frac_std: 0.8
+  threshold_type: "scalar"
+  bottom_max: 5.5
+WF4:
+  top_frac_max: 0.97
+  sparse_bin_width: 0.1
+  frac_std: 0.95
+  threshold_type: "scalar"
+  bottom_max: 5.3
+WF5:
+  top_frac_max: 0.97
+  sparse_bin_width: 0.1
+  frac_std: 0.55
+  threshold_type: "scalar"
+  bottom_max: 5.0
+WF6:
+  top_frac_max: 0.97
+  sparse_bin_width: 0.05
+  frac_std: 1.0
+  threshold_type: "std"
+  bottom_max: 5.0

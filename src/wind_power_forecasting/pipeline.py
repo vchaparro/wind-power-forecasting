@@ -30,8 +30,11 @@
 """
 
 from typing import Dict
+from .pipelines.make_data_for_ml import pipeline as dml
+from .pipelines.make_data_for_ml.nodes import log_running_time
 
 from kedro.pipeline import Pipeline
+
 
 def create_pipelines(**kwargs) -> Dict[str, Pipeline]:
     """Create the project's pipeline.
@@ -43,5 +46,6 @@ def create_pipelines(**kwargs) -> Dict[str, Pipeline]:
         A mapping from a pipeline name to a ``Pipeline`` object.
 
     """
+    make_data_for_ml = dml.create_pipeline().decorate(log_running_time)
 
-    return {"__default__": Pipeline([])}
+    return {"dml": make_data_for_ml, "__default__": make_data_for_ml}
