@@ -1,0 +1,10 @@
+# This is a boilerplate parameters config generated for pipeline 'feature_engineering'
+# using Kedro 0.16.2.
+#
+# Documentation for this file format can be found in
+# https://kedro.readthedocs.io/en/stable/04_user_guide/03_configuration.html#parameters
+
+k_best: "all"
+add_time_feat: True
+add_cycl_feat: True
+add_inv_T: False

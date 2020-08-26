@@ -1,0 +1,30 @@
+# This is a boilerplate catalog config generated for pipeline 'exploratory_data_analysis'
+# using Kedro 0.16.2.
+#
+# Documentation for this file format can be found in "The Data Catalog"
+# Link: https://kedro.readthedocs.io/en/stable/04_user_guide/04_data_catalog.html
+
+## Data prepared for initial Exploratory Data Analysis (EDA)
+df_WF1:
+  type: pandas.CSVDataSet
+  filepath: data/02_intermediate/for_EDA_by_WF/df_WF1.csv
+
+df_WF2:
+  type: pandas.CSVDataSet
+  filepath: data/02_intermediate/for_EDA_by_WF/df_WF2.csv
+
+df_WF3:
+  type: pandas.CSVDataSet
+  filepath: data/02_intermediate/for_EDA_by_WF/df_WF3.csv
+
+df_WF4:
+  type: pandas.CSVDataSet
+  filepath: data/02_intermediate/for_EDA_by_WF/df_WF4.csv
+
+df_WF5:
+  type: pandas.CSVDataSet
+  filepath: data/02_intermediate/for_EDA_by_WF/df_WF5.csv
+
+df_WF6:
+  type: pandas.CSVDataSet
+  filepath: data/02_intermediate/for_EDA_by_WF/df_WF6.csv

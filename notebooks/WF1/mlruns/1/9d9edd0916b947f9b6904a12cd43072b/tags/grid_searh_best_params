@@ -1,0 +1,1 @@
+{'mars__allow_linear': True, 'mars__max_degree': 3, 'mars__penalty': 5.0, 'univariate_sel__k': 2}

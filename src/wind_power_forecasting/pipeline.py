@@ -30,9 +30,10 @@
 """
 
 from typing import Dict
-from .pipelines.prepare_data_for_ml import pipeline as dml
-from .pipelines.prepare_data_for_eda import pipeline as deda
-from .pipelines.prepare_data_for_ml.nodes import log_running_time
+from .pipelines.data_engineering import pipeline as de
+from .pipelines.data_engineering.nodes import log_running_time
+from .pipelines.exploratory_data_analysis import pipeline as eda
+from .pipelines.feature_engineering import pipeline as fe
 from kedro.pipeline import Pipeline
 
 
@@ -46,11 +47,15 @@ def create_pipelines(**kwargs) -> Dict[str, Pipeline]:
         A mapping from a pipeline name to a ``Pipeline`` object.
 
     """
-    prepare_data_for_ml = dml.create_pipeline().decorate(log_running_time)
-    prepare_data_for_eda = deda.create_pipeline().decorate(log_running_time)
+    data_engineering = de.create_pipeline().decorate(log_running_time)
+    exploratory_data_analysis = eda.create_pipeline().decorate(log_running_time)
+    feature_engineering = fe.create_pipeline().decorate(log_running_time)
 
     return {
-        "dml": prepare_data_for_ml,
-        "deda": prepare_data_for_eda,
-        "__default__": prepare_data_for_ml + prepare_data_for_eda,
+        "de": data_engineering,
+        "eda": exploratory_data_analysis,
+        "fe": feature_engineering,
+        "__default__": exploratory_data_analysis
+        + data_engineering
+        + feature_engineering,
     }

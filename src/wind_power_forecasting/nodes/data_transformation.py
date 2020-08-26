@@ -12,7 +12,8 @@ def get_wind_speed(x: pd.DataFrame) -> float:
     """ Function to get wind speed from wind velocity components U and V.
     
         Args:
-            x: Feature data frame containing components U and V as columns.
+            x: Features data frame containing components U and V as columns.
+            
         Returns: 
             Wind speed for each pair <U,V>.
 
@@ -28,7 +29,8 @@ def get_wind_dir(x: pd.DataFrame) -> float:
     """ Function to get wind direction from wind velocity components U and V.
     
         Args:
-            x: Feature data frame containing components U and V as columns.
+            x: Features data frame containing components U and V as columns.
+            
         Returns: 
             Wind direction for each pair <U,V>.
 
