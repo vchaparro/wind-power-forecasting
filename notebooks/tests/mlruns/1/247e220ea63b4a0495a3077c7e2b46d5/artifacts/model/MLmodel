@@ -1,0 +1,23 @@
+artifact_path: model
+flavors:
+  python_function:
+    data: model.pkl
+    env: conda.yaml
+    loader_module: mlflow.sklearn
+    python_version: 3.7.1
+  sklearn:
+    pickled_model: model.pkl
+    serialization_format: cloudpickle
+    sklearn_version: 0.23.1
+run_id: 247e220ea63b4a0495a3077c7e2b46d5
+saved_input_example_info:
+  artifact_path: input_example.json
+  pandas_orient: split
+  type: dataframe
+signature:
+  inputs: '[{"name": "ID", "type": "long"}, {"name": "Time", "type": "string"}, {"name":
+    "U", "type": "double"}, {"name": "V", "type": "double"}, {"name": "T", "type":
+    "double"}, {"name": "CLCT", "type": "double"}, {"name": "wspeed", "type": "double"},
+    {"name": "wdir", "type": "double"}]'
+  outputs: null
+utc_time_created: '2020-08-29 12:23:07.655040'

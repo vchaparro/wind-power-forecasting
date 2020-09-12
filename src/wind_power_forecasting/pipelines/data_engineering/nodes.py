@@ -113,7 +113,8 @@ def add_new_cols(new_cols: list, X: pd.DataFrame) -> pd.DataFrame:
             X: data frame that will be expanded with new_cols.
             
         Returns:
-            X expanded with the new columns.
+            X expanded with the new columns and the columns that 
+            contains missing values.
             
     """
     cols = X.columns[3:]

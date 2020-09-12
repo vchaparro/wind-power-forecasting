@@ -87,15 +87,35 @@ def _temperature_in_celsius(df, temp_col):
     return df
 
 
+def _add_interaction_terms(df, var_list):
+    """ Adds the possible interaction terms from the list elements.
+
+        Args:
+            var_list: list of features.
+
+        Returns:
+            The data frame with the interaction terms as new columns.
+            
+    """
+    print("Function to be implemented!")
+
+
 class NewFeaturesAdder(BaseEstimator, TransformerMixin):
     """ Scikit-learn custom transformer that allows to add new features 
         derived from the original ones.
     """
 
-    def __init__(self, add_time_feat=False, add_cycl_feat=False, add_inv_T=False):
+    def __init__(
+        self,
+        add_time_feat=False,
+        add_cycl_feat=False,
+        add_inv_T=False,
+        add_interactions=False,
+    ):
         self.add_time_feat = add_time_feat
         self.add_cycl_feat = add_cycl_feat
         self.add_inv_T = add_inv_T
+        self.add_interactions = add_interactions
 
     def fit(self, documents, y=None):
         return self
@@ -113,21 +133,28 @@ class NewFeaturesAdder(BaseEstimator, TransformerMixin):
 
         if self.add_cycl_feat:
             if self.add_time_feat == False:
-                # Time derived features
-                x_dataset["hour"] = x_dataset["Time"].dt.hour
-                x_dataset["month"] = x_dataset["Time"].dt.month
+                _encode_cyclic(x_dataset, "wdir", 360)
+            else:
+                # Hour
+                _encode_cyclic(x_dataset, "hour", 24)
 
-            # Hour
-            _encode_cyclic(x_dataset, "hour", 24)
+                # Month
+                _encode_cyclic(x_dataset, "month", 12)
 
-            # Month
-            _encode_cyclic(x_dataset, "month", 12)
-
-            # Wind direction
-            _encode_cyclic(x_dataset, "wdir", 360)
+                # Wind direction
+                _encode_cyclic(x_dataset, "wdir", 360)
 
         if self.add_inv_T:
             x_dataset["inv_T"] = 1 / x_dataset["T"]
+
+        if self.add_interactions:
+            x_dataset["wspeed_wdir"] = x_dataset["wspeed"] * x_dataset["wdir"]
+
+            if self.add_inv_T:
+                x_dataset["wspeed_invT"] = x_dataset["wspeed"] * x_dataset["inv_T"]
+                x_dataset["wspeed_wdir_invT"] = (
+                    x_dataset["wspeed"] * x_dataset["wdir"] * x_dataset["inv_T"]
+                )
 
         return x_dataset
 
@@ -141,9 +168,11 @@ def _walklevel(some_dir, level):
     some_dir = some_dir.rstrip(os.path.sep)
     assert os.path.isdir(some_dir)
     num_sep = some_dir.count(os.path.sep)
+
     for root, dirs, files in os.walk(some_dir):
         yield root, dirs, files
         num_sep_this = root.count(os.path.sep)
+
         if num_sep + level <= num_sep_this:
             del dirs[:]
 
@@ -170,6 +199,7 @@ def feature_engineering(
     add_time_feat: bool,
     add_cycl_feat: bool,
     add_inv_T: bool,
+    add_interactions: bool,
 ) -> (np.ndarray, np.ndarray, List):
     """ It performs feature engineering pipeline with these steps:
             - Add new features derived from original ones.
@@ -177,11 +207,11 @@ def feature_engineering(
             - Apply a power transform + standarization.
 
         Args: 
-            X_train: training set.
-            X_test: test set.
+            data_source: folder where the primary data is located.
             add_time_feat: (True/False) to add or not features derived from Time.
             add_cycle_feat: (True/False) whether to encode cyclic features or not.
             add_inv_T: (True/False) to add or not 1/T derived feature from T.
+            add_interactions: (True/False) to add or not interaction terms.
     
 
         Returns:
@@ -197,7 +227,10 @@ def feature_engineering(
     X_test["Time"] = pd.to_datetime(X_test["Time"], format="%d/%m/%Y %H:%M")
 
     feat_adder = NewFeaturesAdder(
-        add_time_feat=add_time_feat, add_cycl_feat=add_cycl_feat, add_inv_T=add_inv_T
+        add_time_feat=add_time_feat,
+        add_cycl_feat=add_cycl_feat,
+        add_inv_T=add_inv_T,
+        add_interactions=add_interactions,
     )
 
     drop_lst = []
@@ -236,7 +269,9 @@ def feature_engineering(
     return X_train_pped, X_test_pped, feature_names
 
 
-def save_prepared_data(folder: str, X_train, X_test, WF: str) -> None:
+def save_prepared_data(
+    folder: str, X_train, X_test, feature_names: List, WF: str
+) -> None:
     """ Saves the prepared data after feature engineering.
 
         Args: 
@@ -253,6 +288,9 @@ def save_prepared_data(folder: str, X_train, X_test, WF: str) -> None:
 
     with open(folder + "{}/X_test_pped.pickle".format(WF), "wb") as handle:
         pickle.dump(X_test, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    with open(folder + "{}/feature_names.pkl".format(WF), "wb") as handle:
+        pickle.dump(feature_names, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 def show_feature_importance(

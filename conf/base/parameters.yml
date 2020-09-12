@@ -8,7 +8,7 @@ folder:
   int: "./data/02_intermediate/"
   pri: "./data/03_primary/"
   fea: "./data/04_feature/"
-  minp: "./data/05_model_iput/"
+  minp: "./data/05_model_input/"
   mdl: "./data/06_models/"
   mout: "./data/07_model_output/"
   rep: "./data/08_reporting/"

@@ -35,6 +35,8 @@ from kedro.pipeline import Pipeline
 
 from wind_power_forecasting.pipeline import create_pipelines
 
+from kedro_mlflow.framework.hooks import MlflowNodeHook, MlflowPipelineHook
+
 
 class ProjectContext(KedroContext):
     """Users can override the remaining methods from the parent class here,
@@ -45,6 +47,12 @@ class ProjectContext(KedroContext):
     # `project_version` is the version of kedro used to generate the project
     project_version = "0.16.2"
     package_name = "wind_power_forecasting"
+    hooks = (
+        MlflowNodeHook(flatten_dict_params=False),
+        MlflowPipelineHook(
+            model_name="wind_power_forecasting", conda_env="src/requirements.txt",
+        ),
+    )
 
     def _get_pipelines(self) -> Dict[str, Pipeline]:
         return create_pipelines()

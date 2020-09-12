@@ -14,6 +14,7 @@ def create_pipeline(**kwargs):
                     "params:add_time_feat",
                     "params:add_cycl_feat",
                     "params:add_inv_T",
+                    "params:add_interactions",
                 ],
                 outputs=["X_train_pped", "X_test_pped", "feature_names",],
                 name="feature_engineering",
@@ -21,9 +22,10 @@ def create_pipeline(**kwargs):
             node(
                 func=save_prepared_data,
                 inputs=[
-                    "params:folder.fea",
+                    "params:folder.minp",
                     "X_train_pped",
                     "X_test_pped",
+                    "feature_names",
                     "params:wf",
                 ],
                 outputs=None,

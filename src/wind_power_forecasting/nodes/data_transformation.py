@@ -51,12 +51,29 @@ def encode_cyclic(data, col, max_val):
     data[col + "_cos"] = np.cos(2 * np.pi * data[col] / max_val)
 
 
+# Enconding cyclic variables
+def encode_cyclic(data, col, max_val):
+    data[col + "_sin"] = np.sin(2 * np.pi * data[col] / max_val)
+    data[col + "_cos"] = np.cos(2 * np.pi * data[col] / max_val)
+
+
 # Class to add the new features
 class NewFeaturesAdder(BaseEstimator, TransformerMixin):
-    def __init__(self, add_time_feat=False, add_cycl_feat=False, add_inv_T=False):
+    """ Scikit-learn custom transformer that allows to add new features 
+        derived from the original ones.
+    """
+
+    def __init__(
+        self,
+        add_time_feat=False,
+        add_cycl_feat=False,
+        add_inv_T=False,
+        add_interactions=False,
+    ):
         self.add_time_feat = add_time_feat
         self.add_cycl_feat = add_cycl_feat
         self.add_inv_T = add_inv_T
+        self.add_interactions
 
     def fit(self, documents, y=None):
         return self
@@ -64,8 +81,17 @@ class NewFeaturesAdder(BaseEstimator, TransformerMixin):
     def transform(self, x_dataset):
 
         # Velocity derived features
-        x_dataset["wspeed"] = x_dataset.apply(get_wind_speed, axis=1)
-        x_dataset["wdir"] = x_dataset.apply(get_wind_dir, axis=1)
+        x_dataset["wspeed"] = x_dataset.apply(_get_wind_speed, axis=1)
+        x_dataset["wdir"] = x_dataset.apply(_get_wind_dir, axis=1)
+
+        if self.add_interactions:
+            x_dataset["wspeed_wdir"] = x_dataset["wspeed"] * x_dataset["wdir"]
+
+            if self.add_inv_T:
+                x_dataset["wspeed_invT"] = x_dataset["wspeed"] * x_dataset["inv_T"]
+                x_dataset["wspeed_wdir_invT"] = (
+                    x_dataset["wspeed"] * x_dataset["wdir"] * x_dataset["inv_T"]
+                )
 
         if self.add_time_feat:
             # Time derived features
@@ -73,18 +99,17 @@ class NewFeaturesAdder(BaseEstimator, TransformerMixin):
             x_dataset["month"] = x_dataset["Time"].dt.month
 
         if self.add_cycl_feat:
-            # Time derived features
-            x_dataset["hour"] = x_dataset["Time"].dt.hour
-            x_dataset["month"] = x_dataset["Time"].dt.month
+            if self.add_time_feat == False:
+                _encode_cyclic(x_dataset, "wdir", 360)
+            else:
+                # Hour
+                _encode_cyclic(x_dataset, "hour", 24)
 
-            # Hour
-            encode_cyclic(x_dataset, "hour", 24)
+                # Month
+                _encode_cyclic(x_dataset, "month", 12)
 
-            # Month
-            encode_cyclic(x_dataset, "month", 12)
-
-            # Wind direction
-            encode_cyclic(x_dataset, "w_dir", 360)
+                # Wind direction
+                _encode_cyclic(x_dataset, "wdir", 360)
 
         if self.add_inv_T:
             x_dataset["inv_T"] = 1 / x_dataset["T"]
