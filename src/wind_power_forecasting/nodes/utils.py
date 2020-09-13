@@ -1,4 +1,3 @@
-
 import os
 import pandas as pd
 import numpy as np
@@ -6,13 +5,14 @@ import matplotlib.pyplot as plt
 from sklearn.datasets import load_digits
 from sklearn.model_selection import learning_curve
 
-class BlockingTimeSeriesSplit():
+
+class BlockingTimeSeriesSplit:
     def __init__(self, n_splits):
         self.n_splits = n_splits
-    
+
     def get_n_splits(self, X, y, groups):
         return self.n_splits
-    
+
     def split(self, X, y=None, groups=None):
         n_samples = len(X)
         k_fold_size = n_samples // self.n_splits
@@ -23,14 +23,23 @@ class BlockingTimeSeriesSplit():
             start = i * k_fold_size
             stop = start + k_fold_size
             mid = int(0.8 * (stop - start)) + start
-            yield indices[start: mid], indices[mid + margin: stop]
+            yield indices[start:mid], indices[mid + margin : stop]
 
 
-def save_fig(path, fig_id, tight_layout=True, fig_extension="png", resolution=300):
-    path = os.path.join(path, fig_id + "." + fig_extension)
-    print("Saving figure", fig_id)
+def _save_fig(
+    fig_id: int,
+    folder: str,
+    WF: str,
+    tight_layout=True,
+    fig_extension="png",
+    resolution=300,
+):
+    os.makedirs(folder + WF, exist_ok=True)
+    path = os.path.join(folder + WF, fig_id + "." + fig_extension)
+
     if tight_layout:
         plt.tight_layout()
+
     plt.savefig(path, format=fig_extension, dpi=resolution)
 
 
@@ -39,16 +48,23 @@ def export_reports(name, reports, loc):
     """
     for key in reports.keys():
         try:
-            reports[key].to_file(
-                output_file = loc + '{}_NWP{}.html'.format(name, key)      
-            )
+            reports[key].to_file(output_file=loc + "{}_NWP{}.html".format(name, key))
         except Exception:
-            print('WARN: Exportation failed for NWP{}'.format(key))
+            print("WARN: Exportation failed for NWP{}".format(key))
             continue
-           
-        
-def plot_learning_curve(estimator, title, X, y, axes=None, ylim=None, cv=None,
-                        n_jobs=None, train_sizes=np.linspace(.1, 1.0, 5)):
+
+
+def plot_learning_curve(
+    estimator,
+    title,
+    X,
+    y,
+    axes=None,
+    ylim=None,
+    cv=None,
+    n_jobs=None,
+    train_sizes=np.linspace(0.1, 1.0, 5),
+):
     """
     Generate 3 plots: the test and training learning curve, the training
     samples vs fit times curve, the fit times vs score curve.
@@ -107,7 +123,7 @@ def plot_learning_curve(estimator, title, X, y, axes=None, ylim=None, cv=None,
         (default: np.linspace(0.1, 1.0, 5))
     """
     if axes is None:
-        _, axes = plt.subplots(1,3, figsize=(20, 5))
+        _, axes = plt.subplots(1, 3, figsize=(20, 5))
 
     axes[0].set_title(title)
     if ylim is not None:
@@ -115,10 +131,15 @@ def plot_learning_curve(estimator, title, X, y, axes=None, ylim=None, cv=None,
     axes[0].set_xlabel("Training examples")
     axes[0].set_ylabel("Score")
 
-    train_sizes, train_scores, test_scores, fit_times, _ = \
-        learning_curve(estimator, X, y, cv=cv, n_jobs=n_jobs,
-                       train_sizes=train_sizes,
-                       return_times=True)
+    train_sizes, train_scores, test_scores, fit_times, _ = learning_curve(
+        estimator,
+        X,
+        y,
+        cv=cv,
+        n_jobs=n_jobs,
+        train_sizes=train_sizes,
+        return_times=True,
+    )
     train_scores_mean = np.mean(train_scores, axis=1)
     train_scores_std = np.std(train_scores, axis=1)
     test_scores_mean = np.mean(test_scores, axis=1)
@@ -128,32 +149,50 @@ def plot_learning_curve(estimator, title, X, y, axes=None, ylim=None, cv=None,
 
     # Plot learning curve
     axes[0].grid()
-    axes[0].fill_between(train_sizes, train_scores_mean - train_scores_std,
-                         train_scores_mean + train_scores_std, alpha=0.1,
-                         color="r")
-    axes[0].fill_between(train_sizes, test_scores_mean - test_scores_std,
-                         test_scores_mean + test_scores_std, alpha=0.1,
-                         color="g")
-    axes[0].plot(train_sizes, train_scores_mean, 'o-', color="r",
-                 label="Training score")
-    axes[0].plot(train_sizes, test_scores_mean, 'o-', color="g",
-                 label="Cross-validation score")
+    axes[0].fill_between(
+        train_sizes,
+        train_scores_mean - train_scores_std,
+        train_scores_mean + train_scores_std,
+        alpha=0.1,
+        color="r",
+    )
+    axes[0].fill_between(
+        train_sizes,
+        test_scores_mean - test_scores_std,
+        test_scores_mean + test_scores_std,
+        alpha=0.1,
+        color="g",
+    )
+    axes[0].plot(
+        train_sizes, train_scores_mean, "o-", color="r", label="Training score"
+    )
+    axes[0].plot(
+        train_sizes, test_scores_mean, "o-", color="g", label="Cross-validation score"
+    )
     axes[0].legend(loc="best")
 
     # Plot n_samples vs fit_times
     axes[1].grid()
-    axes[1].plot(train_sizes, fit_times_mean, 'o-')
-    axes[1].fill_between(train_sizes, fit_times_mean - fit_times_std,
-                         fit_times_mean + fit_times_std, alpha=0.1)
+    axes[1].plot(train_sizes, fit_times_mean, "o-")
+    axes[1].fill_between(
+        train_sizes,
+        fit_times_mean - fit_times_std,
+        fit_times_mean + fit_times_std,
+        alpha=0.1,
+    )
     axes[1].set_xlabel("Training examples")
     axes[1].set_ylabel("fit_times")
     axes[1].set_title("Scalability of the model")
 
     # Plot fit_time vs score
     axes[2].grid()
-    axes[2].plot(fit_times_mean, test_scores_mean, 'o-')
-    axes[2].fill_between(fit_times_mean, test_scores_mean - test_scores_std,
-                         test_scores_mean + test_scores_std, alpha=0.1)
+    axes[2].plot(fit_times_mean, test_scores_mean, "o-")
+    axes[2].fill_between(
+        fit_times_mean,
+        test_scores_mean - test_scores_std,
+        test_scores_mean + test_scores_std,
+        alpha=0.1,
+    )
     axes[2].set_xlabel("fit_times")
     axes[2].set_ylabel("Score")
     axes[2].set_title("Performance of the model")

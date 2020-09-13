@@ -34,6 +34,7 @@ from .pipelines.data_engineering import pipeline as de
 from .pipelines.data_engineering.nodes import log_running_time
 from .pipelines.exploratory_data_analysis import pipeline as eda
 from .pipelines.feature_engineering import pipeline as fe
+from .pipelines.modeling import pipeline as mdl
 from kedro.pipeline import Pipeline
 
 
@@ -50,12 +51,15 @@ def create_pipelines(**kwargs) -> Dict[str, Pipeline]:
     data_engineering = de.create_pipeline().decorate(log_running_time)
     exploratory_data_analysis = eda.create_pipeline().decorate(log_running_time)
     feature_engineering = fe.create_pipeline().decorate(log_running_time)
+    modeling = mdl.create_pipeline().decorate(log_running_time)
 
     return {
         "de": data_engineering,
         "eda": exploratory_data_analysis,
         "fe": feature_engineering,
+        "mdl": modeling,
         "__default__": exploratory_data_analysis
         + data_engineering
-        + feature_engineering,
+        + feature_engineering
+        + modeling,
     }

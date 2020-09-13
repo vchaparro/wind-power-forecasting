@@ -282,7 +282,7 @@ def _find_outliers(X: pd.DataFrame, y: pd.Series, parameters: Dict) -> Dict[str,
         X_.wspeed, X_.Production, (top) | (sparse) | (bottom), 0.3,
     )
     _save_fig(
-        parameters.get("fig_id"),
+        "outliers",
         parameters.get("folder").get("rep") + "figures/",
         parameters.get("wf"),
     )

@@ -15,6 +15,8 @@ from sklearn.pipeline import Pipeline
 from collections import OrderedDict
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import PowerTransformer
+from yellowbrick.target import FeatureCorrelation
+from wind_power_forecasting.nodes import utils
 
 
 def _get_wind_speed(x: pd.DataFrame) -> float:
@@ -289,12 +291,17 @@ def save_prepared_data(
     with open(folder + "{}/X_test_pped.pickle".format(WF), "wb") as handle:
         pickle.dump(X_test, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-    with open(folder + "{}/feature_names.pkl".format(WF), "wb") as handle:
+    with open(folder + "{}/feature_names.pickle".format(WF), "wb") as handle:
         pickle.dump(feature_names, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 def show_feature_importance(
-    wf: str, data_src: str, X: np.ndarray, feature_names: List, k_best: str
+    wf: str,
+    data_src: str,
+    data_dst: str,
+    X: np.ndarray,
+    feature_names: List,
+    k_best: str,
 ):
     """ It finds the k most influecers features on target by performing  
         mutual information regression. 
@@ -347,3 +354,19 @@ def show_feature_importance(
 
     logger = logging.getLogger(__name__)
     logger.info("Feature importance in descending order: {}".format(sorted_sel_feat))
+
+    # Create a list of the feature names
+    features = feature_names
+
+    # Instantiate the visualizer
+    visualizer = FeatureCorrelation(
+        method="mutual_info-regression",
+        labels=features,
+        size=(1080, 720),
+        title="Importancia de variables",
+    )
+
+    visualizer.fit(X, y, random_state=0)
+    visualizer.show(outpath=data_dst + "figures/" + wf + "/feature_importance.png",)
+    visualizer.show(clear_figure=True)
+

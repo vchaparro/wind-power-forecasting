@@ -1,5 +1,4 @@
 from kedro.pipeline import Pipeline, node
-from typing import Dict
 from .nodes import feature_engineering, show_feature_importance, save_prepared_data
 
 
@@ -36,6 +35,7 @@ def create_pipeline(**kwargs):
                 inputs=[
                     "params:wf",
                     "params:folder.pri",
+                    "params:folder.rep",
                     "X_train_pped",
                     "feature_names",
                     "params:k_best",
