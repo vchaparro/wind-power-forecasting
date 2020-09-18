@@ -1,4 +1,4 @@
-# Post-feature engineering data prepared for ML.
+### Post-feature engineering data prepared for ML ###
 
 X_train_pped_WF1:
   type: pickle.PickleDataSet
@@ -7,7 +7,7 @@ X_train_pped_WF1:
 
 X_test_pped_WF1:
   type: pickle.PickleDataSet
-  filepath: data/05_model_input/WF1/X_test__WF1_pped.pickle
+  filepath: data/05_model_input/WF1/X_test_pped.pickle
   backend: pickle
 
 feature_names_WF1:
@@ -89,3 +89,29 @@ feature_names_WF6:
   type: pickle.PickleDataSet
   filepath: data/05_model_input/WF6/feature_names.pickle
   backend: pickle
+
+### Serialized trained models ###
+
+MARS_WF1:
+  type: pickle.PickleDataSet
+  filepath: data/06_models/WF1/mars.pickle
+
+MARS_WF2:
+  type: pickle.PickleDataSet
+  filepath: data/06_models/WF2/mars.pickle
+
+MARS_WF3:
+  type: pickle.PickleDataSet
+  filepath: data/06_models/WF3/mars.pickle
+
+MARS_WF4:
+  type: pickle.PickleDataSet
+  filepath: data/06_models/WF4/mars.pickle
+
+MARS_WF5:
+  type: pickle.PickleDataSet
+  filepath: data/06_models/WF5/mars.pickle
+
+MARS_WF6:
+  type: pickle.PickleDataSet
+  filepath: data/06_models/WF6/mars.pickle
