@@ -1,12 +1,15 @@
-# Global parameters for create model node.
-algorithm: ""
-k_bests: [1, 2, 3, 4, 5]
+## Global parameters for create model node #
+############################################
+alg: ""
+find_max_kbests: False
+max_k_bests: 2
 n_splits: 7
-transform_target: True
+transform_target: False
 scoring:
   RMSE: "neg_root_mean_squared_error"
   MAE: "neg_mean_absolute_error"
   R2: "r2"
+refit: 'CAPE'
 
 ## Model hyperparameters #
 ##########################
@@ -14,3 +17,27 @@ mars_hypms:
   max_degree: [3, 4, 5]
   allow_linear: [False, True]
   penalty: [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
+
+knn_hypms:
+  max_n_neighbors: 50
+  algorithm: ["kd_tree", "ball_tree"]
+  weights: ["uniform", "distance"]
+  metric: ["cityblock", "euclidean", "manhattan"]
+
+svm_hypms:
+  kernel: ["linear", "rbf", "poly"]
+  C: [0.01, 1, 0.1, 10, 100]
+  gamma: [0.00001, 0.001, 1]
+  epsilon: [0.1, 0.3, 0.5]
+
+rf_hypms:
+  n_estimators: [75, 150, 225]
+  max_features: ["sqrt", "log2", "auto"]
+  max_depth: [10, 50, 100]
+  min_samples_split: [15, 30, 45]
+  min_samples_leaf: [4, 6, 8]
+
+ann_hypms:
+  n_hidden: [1]
+  n_neurons: [30]
+  learning_rate: [0.003]

@@ -1,0 +1,1 @@
+{'mars__regressor__allow_linear': True, 'mars__regressor__max_degree': 3, 'mars__regressor__penalty': 5.0, 'univariate_sel__k': 1}

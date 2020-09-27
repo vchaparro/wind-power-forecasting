@@ -1,0 +1,1 @@
+{'ann__learning_rate': 0.003, 'ann__n_hidden': 1, 'ann__n_neurons': 30, 'univariate_sel__k': 3}

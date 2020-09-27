@@ -25,6 +25,7 @@ from .pipelines.data_engineering.nodes import log_running_time
 from .pipelines.exploratory_data_analysis import pipeline as eda
 from .pipelines.feature_engineering import pipeline as fe
 from .pipelines.modeling import pipeline as mdl
+from .pipelines.neural_network import pipeline as nn
 from kedro.pipeline import Pipeline
 
 
@@ -42,14 +43,17 @@ def create_pipelines(**kwargs) -> Dict[str, Pipeline]:
     exploratory_data_analysis = eda.create_pipeline().decorate(log_running_time)
     feature_engineering = fe.create_pipeline().decorate(log_running_time)
     modeling = mdl.create_pipeline().decorate(log_running_time)
+    neural_network = nn.create_pipeline().decorate(log_running_time)
 
     return {
         "de": data_engineering,
         "eda": exploratory_data_analysis,
         "fe": feature_engineering,
         "mdl": modeling,
+        "nn": neural_network,
         "__default__": exploratory_data_analysis
         + data_engineering
         + feature_engineering
-        + modeling,
+        + modeling
+        + neural_network,
     }

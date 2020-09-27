@@ -13,6 +13,7 @@ from metpy.units import units
 import matplotlib.pyplot as plt
 from operational_analysis.toolkits import filters
 from operational_analysis.toolkits import power_curve
+from kedro.framework import context
 
 
 def log_running_time(func: Callable) -> Callable:
@@ -159,7 +160,6 @@ def input_missing_values(
             X: the data frame with inputed missing values.
     
     """
-    print("COLUMNAS: ", cols)
     regex = r"NWP(?P<NWP>\d{1})_(?P<run>\d{2}h)_(?P<fc_day>D\W?\d?)_(?P<weather_var>\w{1,4})"
     p = re.compile(regex)
 
@@ -218,7 +218,7 @@ def select_best_NWP_features(X: pd.DataFrame) -> pd.DataFrame:
     return X
 
 
-def _find_outliers(X: pd.DataFrame, y: pd.Series, parameters: Dict) -> Dict[str, list]:
+def _find_outliers(X: pd.DataFrame, y: pd.Series, wf: str) -> Dict[str, list]:
     """ Finds outliers based on power curve, using a binning method.
     
         Args:
@@ -230,6 +230,8 @@ def _find_outliers(X: pd.DataFrame, y: pd.Series, parameters: Dict) -> Dict[str,
             outliers: dictionary with the different type of outliers found.
 
     """
+    # Loading context
+    ctx = context.load_context("../wind-power-forecasting")
 
     # Dictionary to save boolean outlier marker
     outliers = {}
@@ -240,12 +242,11 @@ def _find_outliers(X: pd.DataFrame, y: pd.Series, parameters: Dict) -> Dict[str,
     X_ = X[["wspeed", "Production"]]
 
     # Select appropiate values for binning method parameters.
-    wf = parameters.get("wf")
-    top_frac_max = parameters.get(wf).get("top_frac_max")
-    sparse_bin_width = parameters.get(wf).get("sparse_bin_width")
-    frac_std = parameters.get(wf).get("frac_std")
-    threshold_type = parameters.get(wf).get("threshold_type")
-    bottom_max = parameters.get(wf).get("bottom_max")
+    top_frac_max = ctx.params.get(wf).get("top_frac_max")
+    sparse_bin_width = ctx.params.get(wf).get("sparse_bin_width")
+    frac_std = ctx.params.get(wf).get("frac_std")
+    threshold_type = ctx.params.get(wf).get("threshold_type")
+    bottom_max = ctx.params.get(wf).get("bottom_max")
 
     # top-curve stacked outliers
     top = filters.window_range_flag(
@@ -283,8 +284,8 @@ def _find_outliers(X: pd.DataFrame, y: pd.Series, parameters: Dict) -> Dict[str,
     )
     _save_fig(
         "outliers",
-        parameters.get("folder").get("rep") + "figures/",
-        parameters.get("wf"),
+        ctx.params.get("folder").get("rep") + "figures/",
+        ctx.params.get("wf"),
     )
     plt.close()
 
@@ -299,7 +300,7 @@ def _find_outliers(X: pd.DataFrame, y: pd.Series, parameters: Dict) -> Dict[str,
 
 
 @log_running_time
-def clean_outliers(X: pd.DataFrame, y: pd.Series, parameters: Dict) -> pd.DataFrame:
+def clean_outliers(X: pd.DataFrame, y: pd.Series, wf: str) -> pd.DataFrame:
     """ It removes the outliers and returned cleaned X, y.
     
         Args:
@@ -311,7 +312,7 @@ def clean_outliers(X: pd.DataFrame, y: pd.Series, parameters: Dict) -> pd.DataFr
             
     """
     # Find outliers
-    outliers = _find_outliers(X, y, parameters)
+    outliers = _find_outliers(X, y, wf)
 
     # Power curve data
     X["Production"] = y.to_list()

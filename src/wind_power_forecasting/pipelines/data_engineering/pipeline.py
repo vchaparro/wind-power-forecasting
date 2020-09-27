@@ -41,7 +41,7 @@ def create_pipeline(**kwargs):
             ),
             node(
                 func=clean_outliers,
-                inputs=["X_with_best_NWP", "y_by_WF", "parameters"],
+                inputs=["X_with_best_NWP", "y_by_WF", "params:wf"],
                 outputs=["X_cleaned", "y_cleaned"],
                 name="clean_outliers",
             ),
