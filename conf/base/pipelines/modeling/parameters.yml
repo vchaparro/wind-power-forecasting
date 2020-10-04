@@ -2,14 +2,15 @@
 ############################################
 alg: ""
 find_max_kbests: False
-max_k_bests: 2
+max_k_bests: 4
 n_splits: 7
 transform_target: False
 scoring:
   RMSE: "neg_root_mean_squared_error"
   MAE: "neg_mean_absolute_error"
   R2: "r2"
-refit: 'CAPE'
+refit: "CAPE"
+val_score_plot: "r2"
 
 ## Model hyperparameters #
 ##########################

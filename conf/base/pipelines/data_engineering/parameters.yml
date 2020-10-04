@@ -4,10 +4,6 @@
 # Documentation for this file format can be found in
 # https://kedro.readthedocs.io/en/stable/04_user_guide/03_configuration.html#parameters
 
-# Wind Farm identification, by default empty script.
-# To be overwritten from kedro CLI.
-wf: "WF1"
-
 # New columns to be added throught node 'add_new_columns'.
 new_cols:
   [

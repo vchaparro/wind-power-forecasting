@@ -2,6 +2,9 @@
 ## Global parameters
 #############################################################
 
+# Wind Farm identification, by default empty value.
+wf: ""
+
 # data persistence
 folder:
   raw: "./data/01_raw/"
@@ -12,3 +15,8 @@ folder:
   mdl: "./data/06_models/"
   mout: "./data/07_model_output/"
   rep: "./data/08_reporting/"
+  cnr:
+    primary: "./data/CNR/01_primary_data/"
+    prepared: "./data/CNR/02_prepared_data/"
+    models: "./data/CNR/03_models/"
+    predictions: "./data/CNR/04_predictions/"

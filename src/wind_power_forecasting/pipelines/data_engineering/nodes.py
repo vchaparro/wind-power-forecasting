@@ -57,15 +57,10 @@ def _get_wind_speed(x: pd.DataFrame) -> float:
 
 
 def _save_fig(
-    fig_id: int,
-    folder: str,
-    WF: str,
-    tight_layout=True,
-    fig_extension="png",
-    resolution=300,
+    fig_id: int, folder: str, tight_layout=True, fig_extension="png", resolution=300,
 ):
-    os.makedirs(folder + WF, exist_ok=True)
-    path = os.path.join(folder + WF, fig_id + "." + fig_extension)
+    os.makedirs(folder, exist_ok=True)
+    path = os.path.join(folder, fig_id + "." + fig_extension)
 
     if tight_layout:
         plt.tight_layout()
@@ -80,12 +75,12 @@ def _plot_flagged_pc(ws, p, flag_bool, alpha):
     plt.ylabel("Power (MWh)")
 
 
-def get_data_by_wf(X: pd.DataFrame, y: pd.DataFrame, wf: str) -> pd.DataFrame:
+def get_data_by_wf(X: pd.DataFrame, wf: str, y: pd.Series) -> pd.DataFrame:
     """ Get data filterd by Wind Farm (wf).
 
         Args:
             X: X_train_raw.
-            y: y_train_raw. 
+            **y: y_train_raw (optional) 
             wf: Wind Farm identification.
             
         Returns:
@@ -140,9 +135,13 @@ def _interpolate_missing_values(X: pd.DataFrame, cols: List) -> pd.DataFrame:
     del X["Time"]
 
     for var in cols:
-        X[var].interpolate(method="time", inplace=True, limit=2, limit_direction="both")
+        X[var].interpolate(
+            method="time", inplace=True, limit=100, limit_direction="both"
+        )
 
     X.reset_index(inplace=True)
+
+    return X
 
 
 @log_running_time
@@ -207,9 +206,9 @@ def select_best_NWP_features(X: pd.DataFrame) -> pd.DataFrame:
 
     """
     # Select the best NWP predictions for weather predictors
-    X["U"] = X.NWP1_U
-    X["V"] = X.NWP1_V
-    X["T"] = X.NWP3_T
+    X["U"] = (X.NWP1_U + X.NWP2_U + X.NWP3_U + X.NWP4_U) / 4
+    X["V"] = (X.NWP1_V + X.NWP2_V + X.NWP3_V + X.NWP4_V) / 4
+    X["T"] = (X.NWP1_T + X.NWP3_T) / 2
     X["CLCT"] = X.NWP4_CLCT
 
     # Select final features
@@ -218,7 +217,7 @@ def select_best_NWP_features(X: pd.DataFrame) -> pd.DataFrame:
     return X
 
 
-def _find_outliers(X: pd.DataFrame, y: pd.Series, wf: str) -> Dict[str, list]:
+def _find_outliers(X: pd.DataFrame, y: pd.Series, wf: str, *args) -> Dict[str, list]:
     """ Finds outliers based on power curve, using a binning method.
     
         Args:
@@ -282,10 +281,14 @@ def _find_outliers(X: pd.DataFrame, y: pd.Series, wf: str) -> Dict[str, list]:
     _plot_flagged_pc(
         X_.wspeed, X_.Production, (top) | (sparse) | (bottom), 0.3,
     )
+
+    if args:
+        fig_id = args[0]
+    else:
+        fig_id = "outliers"
+
     _save_fig(
-        "outliers",
-        ctx.params.get("folder").get("rep") + "figures/",
-        ctx.params.get("wf"),
+        fig_id, ctx.params.get("folder").get("rep") + "figures/" + wf + "/",
     )
     plt.close()
 
@@ -300,7 +303,7 @@ def _find_outliers(X: pd.DataFrame, y: pd.Series, wf: str) -> Dict[str, list]:
 
 
 @log_running_time
-def clean_outliers(X: pd.DataFrame, y: pd.Series, wf: str) -> pd.DataFrame:
+def clean_outliers(X: pd.DataFrame, y: pd.Series, wf: str, *args) -> pd.DataFrame:
     """ It removes the outliers and returned cleaned X, y.
     
         Args:
@@ -312,7 +315,7 @@ def clean_outliers(X: pd.DataFrame, y: pd.Series, wf: str) -> pd.DataFrame:
             
     """
     # Find outliers
-    outliers = _find_outliers(X, y, wf)
+    outliers = _find_outliers(X, y, wf, *args)
 
     # Power curve data
     X["Production"] = y.to_list()
@@ -334,17 +337,18 @@ def clean_outliers(X: pd.DataFrame, y: pd.Series, wf: str) -> pd.DataFrame:
     return X_cleaned, y_cleaned
 
 
-def fix_negative_clct(X: pd.DataFrame) -> None:
+def fix_negative_values(X: pd.DataFrame) -> tuple:
     """ Replaces negative values of CLCT by 0.
     
         Args:
-            df: the data frame containing CLCT column.
-            
+            X: the data frame containing CLCT column.
         Returns:
             None, it replaces the values inplace.
     
     """
     X.loc[X["CLCT"] < 0, "CLCT"] = 0.0
+
+    return X
 
 
 def split_data_by_date(date: str, X: pd.DataFrame, y: pd.Series) -> Dict:

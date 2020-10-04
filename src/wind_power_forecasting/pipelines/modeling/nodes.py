@@ -1,46 +1,47 @@
-import pandas as pd
-import pickle
-from kedro.framework import context
-from functools import wraps
-from typing import Callable, Dict, List
-import time
-import logging
-import numpy as np
-from pathlib import Path
 import datetime as dt
+import logging
 import os
+import pickle
 import re
+import time
+from functools import wraps
+from pathlib import Path
+from typing import Callable, Dict, List
+
+import cufflinks as cf
 import matplotlib.pyplot as plt
-from typing import List, Dict
-from wind_power_forecasting.nodes import metric
+import mlflow
+import mlflow.sklearn
+import numpy as np
+import pandas as pd
+import plotly
+import tensorflow as tf
+from kedro.framework import context
+from mlflow import log_artifact, log_metric, log_param
+from pyearth import Earth
+from sklearn.compose import ColumnTransformer, TransformedTargetRegressor
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.feature_selection import (
+    SelectFromModel,
+    SelectKBest,
+    mutual_info_regression,
+)
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+from sklearn.metrics.scorer import make_scorer
+from sklearn.model_selection import GridSearchCV, TimeSeriesSplit
+from sklearn.neighbors import DistanceMetric, KNeighborsRegressor
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import PowerTransformer
+from sklearn.svm import SVR
+from tensorflow import keras
+from yellowbrick.model_selection import RFECV, CVScores, LearningCurve, ValidationCurve
+from yellowbrick.regressor import PredictionError, ResidualsPlot
+
 from wind_power_forecasting.nodes import data_transformation as dtr
+from wind_power_forecasting.nodes import metric
 from wind_power_forecasting.pipelines.feature_engineering.nodes import (
     feature_engineering as fe,
 )
-from sklearn.compose import ColumnTransformer, TransformedTargetRegressor
-from sklearn.pipeline import Pipeline
-import mlflow
-import mlflow.sklearn
-from mlflow import log_metric, log_param, log_artifact
-from sklearn.preprocessing import PowerTransformer
-from sklearn.feature_selection import SelectFromModel
-from sklearn.model_selection import GridSearchCV
-from sklearn.feature_selection import SelectKBest, mutual_info_regression
-from sklearn.metrics.scorer import make_scorer
-from pyearth import Earth
-from sklearn.model_selection import TimeSeriesSplit
-from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
-from yellowbrick.regressor import ResidualsPlot, PredictionError
-from yellowbrick.model_selection import ValidationCurve, LearningCurve, CVScores, RFECV
-from sklearn.neighbors import KNeighborsRegressor
-from sklearn.neighbors import DistanceMetric
-from sklearn.svm import SVR
-from sklearn.ensemble import RandomForestRegressor
-import tensorflow as tf
-from tensorflow import keras
-
-import plotly
-import cufflinks as cf
 
 setattr(plotly.offline, "__PLOTLY_OFFLINE_INITIALIZED", True)
 cf.set_config_file(offline=True)
@@ -57,16 +58,19 @@ def _log_gcv_scores(gcv: object, scoring: Dict, alg: str) -> Dict:
 
         if (scorer == "RMSE") or (scorer == "MAE") or (scorer == "CAPE"):
             logger.info(
-                "Best CV {0}:{1:.2f}, std:{2:.2f}".format(scorer, -best_CV, best_CV_std)
+                "Best CV {0}:{1:.2f}, std:{2:.2f}".format(
+                    scorer, -best_CV, best_CV_std)
             )
         else:
             logger.info(
-                "Best CV {0}:{1:.2f}, std:{2:.2f}".format(scorer, best_CV, best_CV_std)
+                "Best CV {0}:{1:.2f}, std:{2:.2f}".format(
+                    scorer, best_CV, best_CV_std)
             )
 
     # Log best hyperparameters found
     logger.info(
-        "Best hyperparameters found for {0} : {1}".format(alg, gcv.best_params_)
+        "Best hyperparameters found for {0} : {1}".format(
+            alg, gcv.best_params_)
     )
 
 
@@ -145,7 +149,7 @@ def _save_model(folder: str, model, wf: str, alg: str) -> None:
             WF: Wind Farm identification.
             model: the model object.
             alg: the algorithm used to create the model.
-            
+
         Returns:
             None.
     """
@@ -180,7 +184,7 @@ def _build_mars(
 
         Returns:
             An Grid Search CV scikit learn object.
-            
+
     """
     ctx = context.load_context("../wind-power-forecasting")
 
@@ -194,10 +198,12 @@ def _build_mars(
     if transform_target:
         mars = TransformedTargetRegressor(
             regressor=Earth(feature_importance_type="gcv"),
-            transformer=PowerTransformer(method="yeo-johnson", standardize=True),
+            transformer=PowerTransformer(
+                method="yeo-johnson", standardize=True),
             check_inverse=False,
         )
-        pipeline = Pipeline([("univariate_sel", selec_k_best), ("mars", mars),])
+        pipeline = Pipeline(
+            [("univariate_sel", selec_k_best), ("mars", mars), ])
         param_grid = {
             "mars__regressor__max_degree": ctx.params.get("mars_hypms").get(
                 "max_degree"
@@ -211,7 +217,8 @@ def _build_mars(
 
     else:
         mars = Earth(feature_importance_type="gcv")
-        pipeline = Pipeline([("univariate_sel", selec_k_best), ("mars", mars),])
+        pipeline = Pipeline(
+            [("univariate_sel", selec_k_best), ("mars", mars), ])
         param_grid = {
             "mars__max_degree": ctx.params.get("mars_hypms").get("max_degree"),
             "mars__allow_linear": ctx.params.get("mars_hypms").get("allow_linear"),
@@ -290,7 +297,8 @@ def _test_best_mars(
     ### MLFlow logging ####
 
     mlflow.log_param("selected_features", selected_feat)
-    mlflow.log_param("k_best_features", best_mars.get_params().get("univariate_sel__k"))
+    mlflow.log_param("k_best_features",
+                     best_mars.get_params().get("univariate_sel__k"))
 
     if transform_target:
         mlflow.log_param(
@@ -303,8 +311,10 @@ def _test_best_mars(
             "allow_linear", best_mars.get_params().get("mars__regressor__allow_linear")
         )
     else:
-        mlflow.log_param("max_degree", best_mars.get_params().get("mars__max_degree"))
-        mlflow.log_param("penalty", best_mars.get_params().get("mars__penalty"))
+        mlflow.log_param(
+            "max_degree", best_mars.get_params().get("mars__max_degree"))
+        mlflow.log_param(
+            "penalty", best_mars.get_params().get("mars__penalty"))
         mlflow.log_param(
             "allow_linear", best_mars.get_params().get("mars__allow_linear")
         )
@@ -348,7 +358,7 @@ def _build_knn(
 
         Returns:
             An Grid Search CV scikit learn object.
- 
+
     """
     selec_k_best = SelectKBest(mutual_info_regression, k=1)
 
@@ -359,12 +369,14 @@ def _build_knn(
 
     # Load knn hyperparams
     ctx = context.load_context("../wind-power-forecasting")
-    n_neighbors = list(range(1, ctx.params.get("knn_hypms").get("max_n_neighbors"), 2))
+    n_neighbors = list(range(1, ctx.params.get(
+        "knn_hypms").get("max_n_neighbors"), 2))
 
     if transform_target:
         knn = TransformedTargetRegressor(
             regressor=KNeighborsRegressor(),
-            transformer=PowerTransformer(method="yeo-johnson", standardize=True),
+            transformer=PowerTransformer(
+                method="yeo-johnson", standardize=True),
             check_inverse=False,
         )
         pipeline = Pipeline([("univariate_sel", selec_k_best), ("knn", knn)])
@@ -453,7 +465,8 @@ def _test_best_knn(
 
     # pre-processing
     mlflow.log_param("selected_features", selected_feat)
-    mlflow.log_param("k_best_features", best_knn.get_params().get("univariate_sel__k"))
+    mlflow.log_param("k_best_features",
+                     best_knn.get_params().get("univariate_sel__k"))
 
     # grid search parameters
     if transform_target:
@@ -466,11 +479,14 @@ def _test_best_knn(
         mlflow.log_param(
             "weights", best_knn.get_params().get("knn__regressor__weights")
         )
-        mlflow.log_param("metric", best_knn.get_params().get("knn__regressor__metric"))
+        mlflow.log_param("metric", best_knn.get_params().get(
+            "knn__regressor__metric"))
 
     else:
-        mlflow.log_param("n_neighbors", best_knn.get_params().get("knn__n_neighbors"))
-        mlflow.log_param("algorithm", best_knn.get_params().get("knn__algorithm"))
+        mlflow.log_param(
+            "n_neighbors", best_knn.get_params().get("knn__n_neighbors"))
+        mlflow.log_param(
+            "algorithm", best_knn.get_params().get("knn__algorithm"))
         mlflow.log_param("weights", best_knn.get_params().get("knn__weights"))
         mlflow.log_param("metric", best_knn.get_params().get("knn__metric"))
 
@@ -512,7 +528,7 @@ def _build_svm(
 
         Returns:
             An Grid Search CV scikit learn object.
- 
+
     """
     ctx = context.load_context("../wind-power-forecasting")
 
@@ -526,7 +542,8 @@ def _build_svm(
     if transform_target:
         svm = TransformedTargetRegressor(
             regressor=SVR(),
-            transformer=PowerTransformer(method="yeo-johnson", standardize=True),
+            transformer=PowerTransformer(
+                method="yeo-johnson", standardize=True),
             check_inverse=False,
         )
         pipeline = Pipeline([("univariate_sel", selec_k_best), ("svm", svm)])
@@ -615,13 +632,16 @@ def _test_best_svm(
 
     # pre-processing
     mlflow.log_param("selected_features", selected_feat)
-    mlflow.log_param("k_best_features", best_svm.get_params().get("univariate_sel__k"))
+    mlflow.log_param("k_best_features",
+                     best_svm.get_params().get("univariate_sel__k"))
 
     # grid search parameters
     if transform_target:
-        mlflow.log_param("kernel", best_svm.get_params().get("svm__regressor__kernel"))
+        mlflow.log_param("kernel", best_svm.get_params().get(
+            "svm__regressor__kernel"))
         mlflow.log_param("C", best_svm.get_params().get("svm__regressor__C"))
-        mlflow.log_param("gamma", best_svm.get_params().get("svm__regressor__gamma"))
+        mlflow.log_param("gamma", best_svm.get_params().get(
+            "svm__regressor__gamma"))
         mlflow.log_param(
             "epsilon", best_svm.get_params().get("svm__regressor__epsilon")
         )
@@ -670,7 +690,7 @@ def _build_rf(
 
         Returns:
             An Grid Search CV scikit learn object.
- 
+
     """
     ctx = context.load_context("../wind-power-forecasting")
 
@@ -684,7 +704,8 @@ def _build_rf(
     if transform_target:
         rf = TransformedTargetRegressor(
             regressor=RandomForestRegressor(bootstrap=True, random_state=42),
-            transformer=PowerTransformer(method="yeo-johnson", standardize=True),
+            transformer=PowerTransformer(
+                method="yeo-johnson", standardize=True),
             check_inverse=False,
         )
         pipeline = Pipeline([("univariate_sel", selec_k_best), ("rf", rf)])
@@ -785,7 +806,8 @@ def _test_best_rf(
 
     # pre-processing
     mlflow.log_param("selected_features", selected_feat)
-    mlflow.log_param("k_best_features", best_rf.get_params().get("univariate_sel__k"))
+    mlflow.log_param("k_best_features",
+                     best_rf.get_params().get("univariate_sel__k"))
 
     # grid search parameters
     if transform_target:
@@ -808,9 +830,12 @@ def _test_best_rf(
         )
 
     else:
-        mlflow.log_param("n_estimators", best_rf.get_params().get("rf__n_estimators"))
-        mlflow.log_param("max_features", best_rf.get_params().get("rf__max_features"))
-        mlflow.log_param("max_depth", best_rf.get_params().get("rf__max_depth"))
+        mlflow.log_param(
+            "n_estimators", best_rf.get_params().get("rf__n_estimators"))
+        mlflow.log_param(
+            "max_features", best_rf.get_params().get("rf__max_features"))
+        mlflow.log_param(
+            "max_depth", best_rf.get_params().get("rf__max_depth"))
         mlflow.log_param(
             "min_samples_split", best_rf.get_params().get("rf__min_samples_split")
         )
@@ -853,7 +878,7 @@ def _regression_plots(
         Returns:
             None, plots show up and are saved 
             in data/08_reporting/figures.
-            
+
     """
     # Get model from received pipeline object
     model = model.get_params().get(alg.lower())
@@ -897,7 +922,7 @@ def _validation_plots(
         Returns:
             None, plots show up and are saved 
             in data/08_reporting/figures.
-            
+
     """
     model = model.get_params().get(alg.lower())
     cv = TimeSeriesSplit(n_splits)
@@ -926,8 +951,8 @@ def _validation_plots(
     elif alg == "SVM":
         viz = ValidationCurve(
             model,
-            param_name="C",
-            param_range=np.arange(1, 10),
+            param_name="gamma",
+            param_range=np.logspace(-6, 6, 20),
             cv=cv,
             scoring=scorer,
             title=alg,
@@ -947,9 +972,7 @@ def _validation_plots(
     viz.show(clear_figure=True)
 
     # Learning curves
-    visualizer = LearningCurve(
-        model, scoring=scorer, train_sizes=np.linspace(0.1, 1.0, 20), title=alg,
-    )
+    visualizer = LearningCurve(model, scoring=scorer, title=alg,)
     visualizer.fit(X_train, y_train)
     visualizer.show(outpath=dest_folder + "learning_curves.png")
     visualizer.show(clear_figure=True)
@@ -995,7 +1018,8 @@ def _time_series_plots(wf, predictions):
         y_test = ctx.catalog.load("y_test_WF6")
         y_test = y_test[0]
 
-    real_pred = np.concatenate((np.array(y_test), predictions)).reshape(len(y_test), 2)
+    real_pred = np.concatenate(
+        (np.array(y_test), predictions)).reshape(len(y_test), 2)
     df_real_pred = pd.DataFrame(
         data=real_pred, index=X_test.Time, columns=["real", "estimado"],
     )
@@ -1053,7 +1077,7 @@ def create_model(
         Returns:
             A sklearn GridSearchCV object with all the relevant parameters for
             the creation of the model.
-            
+
     """
 
     # load data
@@ -1112,7 +1136,7 @@ def create_model(
             transform_target,
         )
 
-    return wf, alg, best_model, X_train, y_train, cape_scorer
+    return wf, alg, best_model, X_train, y_train
 
 
 def test_model(
@@ -1136,7 +1160,7 @@ def test_model(
                 The model re-trained ready to predict on new unseen data.
                 Train and test data sets.
                 The Wind Farm identification.
-                
+
     """
 
     # Load test data

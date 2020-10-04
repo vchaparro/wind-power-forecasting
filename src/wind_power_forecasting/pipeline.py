@@ -1,32 +1,19 @@
-# Copyright 2020 QuantumBlack Visual Analytics Limited
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-# OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND
-# NONINFRINGEMENT. IN NO EVENT WILL THE LICENSOR OR OTHER CONTRIBUTORS
-# BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN
-# ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF, OR IN
-# CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-#
-
-
 """Construction of the master pipeline.
 """
 
 from typing import Dict
+
+from kedro.pipeline import Pipeline
+
+from .pipelines.CNR_challenge import data_preprocess as dcnr
+from .pipelines.CNR_challenge import feature_engineering as fecnr
+from .pipelines.CNR_challenge import make_models as pcnr
 from .pipelines.data_engineering import pipeline as de
 from .pipelines.data_engineering.nodes import log_running_time
 from .pipelines.exploratory_data_analysis import pipeline as eda
 from .pipelines.feature_engineering import pipeline as fe
 from .pipelines.modeling import pipeline as mdl
 from .pipelines.neural_network import pipeline as nn
-from kedro.pipeline import Pipeline
 
 
 def create_pipelines(**kwargs) -> Dict[str, Pipeline]:
@@ -44,6 +31,9 @@ def create_pipelines(**kwargs) -> Dict[str, Pipeline]:
     feature_engineering = fe.create_pipeline().decorate(log_running_time)
     modeling = mdl.create_pipeline().decorate(log_running_time)
     neural_network = nn.create_pipeline().decorate(log_running_time)
+    data_for_CNR = dcnr.create_pipeline().decorate(log_running_time)
+    feat_engineering_CNR = fecnr.create_pipeline().decorate(log_running_time)
+    predictions_CNR = pcnr.create_pipeline().decorate(log_running_time)
 
     return {
         "de": data_engineering,
@@ -51,9 +41,15 @@ def create_pipelines(**kwargs) -> Dict[str, Pipeline]:
         "fe": feature_engineering,
         "mdl": modeling,
         "nn": neural_network,
-        "__default__": exploratory_data_analysis
-        + data_engineering
+        "dcnr": data_for_CNR,
+        "fecnr": feat_engineering_CNR,
+        "pcnr": predictions_CNR,
+        "__default__": data_engineering
         + feature_engineering
+        + exploratory_data_analysis
         + modeling
-        + neural_network,
+        + neural_network
+        + data_for_CNR
+        + feat_engineering_CNR
+        + predictions_CNR,
     }

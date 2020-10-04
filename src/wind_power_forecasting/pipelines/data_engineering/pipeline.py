@@ -6,7 +6,7 @@ from .nodes import (
     input_missing_values,
     select_best_NWP_features,
     clean_outliers,
-    fix_negative_clct,
+    fix_negative_values,
     split_data_by_date,
     export_data,
 )
@@ -17,7 +17,7 @@ def create_pipeline(**kwargs):
         [
             node(
                 func=get_data_by_wf,
-                inputs=["X_train_raw", "y_train_raw", "params:wf"],
+                inputs=["X_train_raw", "params:wf", "y_train_raw"],
                 outputs=["X_by_WF", "y_by_WF"],
                 name="filter_data_by_WF",
             ),
@@ -46,14 +46,14 @@ def create_pipeline(**kwargs):
                 name="clean_outliers",
             ),
             node(
-                func=fix_negative_clct,
+                func=fix_negative_values,
                 inputs=["X_cleaned"],
-                outputs=None,
-                name="fix_negative_CLCT",
+                outputs="X_fixed",
+                name="fix_negative_values",
             ),
             node(
                 func=split_data_by_date,
-                inputs=["params:split_date", "X_cleaned", "y_cleaned"],
+                inputs=["params:split_date", "X_fixed", "y_cleaned"],
                 outputs="splitted_data_sets",
                 name="split_data",
             ),

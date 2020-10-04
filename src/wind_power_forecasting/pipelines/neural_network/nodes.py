@@ -1,5 +1,4 @@
 import pandas as pd
-import pickle
 from kedro.framework import context
 from functools import wraps
 from typing import Callable, Dict, List
@@ -21,7 +20,7 @@ from wind_power_forecasting.pipelines.modeling.nodes import (
     _get_data_by_WF,
     _log_gcv_scores,
     _eval_metrics,
-    _save_model,
+    _time_series_plots,
 )
 from sklearn.compose import ColumnTransformer, TransformedTargetRegressor
 from sklearn.pipeline import Pipeline
@@ -40,18 +39,55 @@ from yellowbrick.model_selection import ValidationCurve, LearningCurve, CVScores
 from sklearn.ensemble import RandomForestRegressor
 import tensorflow as tf
 from tensorflow import keras
+from sklearn.base import BaseEstimator, RegressorMixin
 
 import plotly
 import cufflinks as cf
 
+
+class KerasClf(
+    BaseEstimator, RegressorMixin, keras.wrappers.scikit_learn.KerasRegressor
+):
+    def __init__(self, build_fn, **kwargs):
+        super(keras.wrappers.scikit_learn.KerasRegressor, self).__init__(
+            build_fn, **kwargs
+        )
+
+
+def _build_ann(n_hidden=1, n_neurons=30, learning_rate=3e-3, input_shape=[2]):
+    import tensorflow as tf
+
+    ann = tf.keras.models.Sequential()
+    ann.add(tf.keras.layers.InputLayer(input_shape=input_shape))
+
+    for layer in range(n_hidden):
+        ann.add(tf.keras.layers.Dense(n_neurons, activation="relu"))
+
+    ann.add(tf.keras.layers.Dense(1))
+    optimizer = tf.keras.optimizers.SGD(lr=learning_rate)
+    ann.compile(
+        loss="mse", optimizer=optimizer, metrics=[tf.keras.metrics.MeanAbsoluteError()],
+    )
+
+    return ann
+
+
+"""def _get_run_logdir():
+    import time
+
+    root_logdir = os.path.join(os.curdir, "ann_logs")
+    run_id = time.strftime("run_%Y_%m_%d-%H_%M_%S")
+
+    return os.path.join(root_logdir, run_id)"""
+
+
 def _regression_plots(
     wf: str,
     alg: str,
-    model_folder: str,
     X_train: np.ndarray,
-    y_train: pd.Series,
+    y_train: np.ndarray,
     X_test: np.ndarray,
-    y_test: pd.Series,
+    y_test: np.ndarray,
     dest_folder: str,
 ) -> None:
     """ Gets several regression related plots.
@@ -67,17 +103,52 @@ def _regression_plots(
             
     """
     # Get model from received pipeline object
-    model = tf.keras.load_model(model_folder +  + "{0}/{1}.h5".format(wf, "ANN"))
+    ctx = context.load_context("../wind-power-forecasting")
+    model_folder = ctx.params.get("folder").get("mdl")
+    model = tf.keras.models.load_model(model_folder + "{0}/{1}.h5".format(wf, "ANN"))
+
+    # model hyperparameters: reconstruction from optimized model.
+    input_shape = [model.layers[0].input_shape[1]]
+    n_hidden = len(model.layers) - 1
+    n_neurons = model.layers[1].input_shape[1]
+    learning_rate = model.optimizer.get_config().get("learning_rate")
+
+    def build_model(
+        n_hidden=n_hidden,
+        n_neurons=n_neurons,
+        learning_rate=learning_rate,
+        input_shape=input_shape,
+    ):
+        import tensorflow as tf
+
+        model = tf.keras.models.Sequential()
+        model.add(tf.keras.layers.InputLayer(input_shape=input_shape))
+
+        for layer in range(n_hidden):
+            model.add(tf.keras.layers.Dense(n_neurons, activation="relu"))
+
+        model.add(tf.keras.layers.Dense(1))
+        optimizer = tf.keras.optimizers.SGD(lr=learning_rate)
+        model.compile(
+            loss="mse",
+            optimizer=optimizer,
+            metrics=[tf.keras.metrics.MeanAbsoluteError()],
+        )
+
+        return model
+
+    kf = KerasClf(build_model, epochs=100, batch_size=3)
 
     # Residuals plot
-    visualizer = ResidualsPlot(model, title=alg)
+    visualizer = ResidualsPlot(kf, title=alg)
+
     visualizer.fit(X_train, y_train)
     visualizer.score(X_test, y_test)
     visualizer.show(outpath=dest_folder + "residual_plots.png"),
     visualizer.show(clear_figure=True)
 
     # Prediction error plot
-    visualizer = PredictionError(model, title=alg)
+    visualizer = PredictionError(kf, title=alg)
     visualizer.fit(X_train, y_train)
     visualizer.score(X_test, y_test)
     visualizer.show(outpath=dest_folder + "prediction_error.png")
@@ -87,9 +158,8 @@ def _regression_plots(
 def _validation_plots(
     wf: str,
     alg: str,
-    model_folder: object,
     X_train: np.ndarray,
-    y_train: pd.Series,
+    y_train: np.ndarray,
     n_splits: int,
     scorer: object,
     dest_folder: str,
@@ -110,56 +180,38 @@ def _validation_plots(
             in data/08_reporting/figures.
             
     """
-    model = tf.keras.load_model(model_folder +  + "{0}/{1}.h5".format(wf, "ANN"))
+    ctx = ctx = context.load_context("../wind-power-forecasting")
+    model_folder = ctx.params.get("folder").get("mdl")
+    model = tf.keras.models.load_model(model_folder + "{0}/{1}.h5".format(wf, "ANN"))
     cv = TimeSeriesSplit(n_splits)
     if transform_target:
         model = model.regressor_
 
-    
-
-    # Learning curves
-    visualizer = LearningCurve(
-        model, scoring=scorer, train_sizes=np.linspace(0.1, 1.0, 20), title=alg,
+    history = model.fit(
+        X_train, y_train, validation_split=0.1, epochs=100, batch_size=3
     )
-    visualizer.fit(X_train, y_train)
-    visualizer.show(outpath=dest_folder + "learning_curves.png")
-    visualizer.show(clear_figure=True)
 
-    # Cross validation scores.
-    visualizer = CVScores(
-        model,
-        cv=cv,
-        scoring=scorer,
-        title="Errores en validación cruzada para {}".format(alg),
-    )
-    visualizer.fit(X_train, y_train)
-    visualizer.show(outpath=dest_folder + "cv_scores.png")
-    visualizer.show(clear_figure=True)
+    # Accuracy
+    plt.plot(history.history["mean_absolute_error"])
+    plt.plot(history.history["val_mean_absolute_error"])
+    plt.title("model accuracy")
+    plt.ylabel("accuracy")
+    plt.xlabel("epoch")
+    plt.legend(["train", "val"], loc="upper left")
+    plt.savefig(dest_folder + "accuray.png")
+    plt.show()
+    plt.close()
 
-
-def _build_ann(n_hidden=1, n_neurons=30, learning_rate=3e-3, input_shape=[3]):
-    import tensorflow as tf
-
-    ann = tf.keras.models.Sequential()
-    ann.add(tf.keras.layers.InputLayer(input_shape=input_shape))
-
-    for layer in range(n_hidden):
-        ann.add(tf.keras.layers.Dense(n_neurons, activation="relu"))
-
-    ann.add(tf.keras.layers.Dense(1))
-    optimizer = tf.keras.optimizers.SGD(lr=learning_rate)
-    ann.compile(loss="mse", optimizer=optimizer, metric="r2")
-
-    return ann
-
-
-def _get_run_logdir():
-    import time
-
-    root_logdir = os.path.join(os.curdir, "ann_logs")
-    run_id = time.strftime("run_%Y_%m_%d-%H_%M_%S")
-
-    return os.path.join(root_logdir, run_id)
+    # Loss
+    plt.plot(history.history["loss"])
+    plt.plot(history.history["val_loss"])
+    plt.title("model loss")
+    plt.ylabel("loss")
+    plt.xlabel("epoch")
+    plt.legend(["train", "val"], loc="upper left")
+    plt.savefig(dest_folder + "loss.png")
+    plt.show()
+    plt.close()
 
 
 def train_test_ann(
@@ -206,7 +258,7 @@ def train_test_ann(
 
     if transform_target:
         nn = keras.wrappers.scikit_learn.KerasRegressor(
-            _build_ann, epochs=10, batch_size=3
+            _build_ann, epochs=100, batch_size=3
         )
         ann = TransformedTargetRegressor(
             regressor=nn,
@@ -221,12 +273,12 @@ def train_test_ann(
             "ann__regressor__learning_rate": ctx.params.get("ann_hypms").get(
                 "learning_rate"
             ),
-            "ann_regressor_input_shape": [max_k_bests],
+            "ann__regressor__input_shape": [max_k_bests],
             "univariate_sel__k": k_bests,
         }
     else:
         ann = keras.wrappers.scikit_learn.KerasRegressor(
-            _build_ann, epochs=10, batch_size=3
+            _build_ann, epochs=100, batch_size=3
         )
         pipeline = Pipeline([("univariate_sel", selec_k_best), ("ann", ann)])
         param_grid = {
@@ -265,8 +317,8 @@ def train_test_ann(
         mutual_info_regression, k=best_ann.get_params().get("univariate_sel__k")
     )
     selec_k_best.fit(X_train, y_train)
-    X_train_2 = selec_k_best.transform(X_train)
-    X_test_2 = selec_k_best.transform(X_test)
+    X_train_2_nn = selec_k_best.transform(X_train)
+    X_test_2_nn = selec_k_best.transform(X_test)
 
     mask = selec_k_best.get_support()  # list of booleans
     selected_feat = []
@@ -275,25 +327,27 @@ def train_test_ann(
         if bool:
             selected_feat.append(feature)
 
+    """
     # Plot learning curves when refitting
     run_logdir = _get_run_logdir()
     tensorboard_cb = tf.keras.callbacks.TensorBoard(run_logdir)
     history = best_ann.named_steps.get("ann").model.fit(
-        X_train_2, y_train.to_numpy(), epochs=30, callbacks=[tensorboard_cb]
+        X_train_2_nn, y_train.to_numpy(), epochs=30, callbacks=[tensorboard_cb]
     )
+    """
 
-    predictions = best_ann.predict(X_test)
+    predictions_nn = best_ann.predict(X_test)
 
     # build prediction matrix (ID,Production)
     pred_matrix = np.stack(
-        (np.array(y_test.index.to_series()).astype(int), predictions), axis=-1
+        (np.array(y_test.index.to_series()).astype(int), predictions_nn), axis=-1
     )
     df_pred = pd.DataFrame(
         data=pred_matrix.reshape(-1, 2), columns=["ID", "Production"]
     )
 
     # get metrics
-    (rmse, mae, r2, cape) = _eval_metrics(y_test, predictions)
+    (rmse, mae, r2, cape) = _eval_metrics(y_test, predictions_nn)
 
     # Printmetrics
     logger = logging.getLogger(__name__)
@@ -340,15 +394,15 @@ def train_test_ann(
         output_folder + "{0}/{1}.h5".format(wf, "ANN")
     )
 
-    return predictions
+    return X_train_2_nn, X_test_2_nn, predictions_nn
+
 
 def get_nn_plots(
     wf: str,
     alg: str,
-    model: object,
-    predictions: np.ndarray,
-    X_train_2: np.ndarray,
-    X_test_2: np.ndarray,
+    predictions_nn: np.ndarray,
+    X_train_2_nn: np.ndarray,
+    X_test_2_nn: np.ndarray,
     n_splits: int,
     scorer: object,
     folder: str,
@@ -359,30 +413,22 @@ def get_nn_plots(
         - Feature extraction plots.
     """
     ctx = context.load_context("../wind-power-forecasting")
-    transform_target = ctx.params.get("transform_target")
-
     data = _get_data_by_WF(wf)
-    y_train = data[1]
-    y_test = data[3]
+    transform_target = ctx.params.get("transform_target")
+    y_train = data[1].to_numpy()
+    y_test = data[3].to_numpy()
 
     # Create destination folder
     os.makedirs(folder + "figures/" + wf + "/" + alg + "/", exist_ok=True)
     dest_folder = folder + "figures/" + wf + "/" + alg + "/"
 
-    _regression_plots(
-        wf, alg, model, X_train_2, y_train, X_test_2, y_test, dest_folder,
-    )
     _validation_plots(
-        wf,
-        alg,
-        model,
-        X_train_2,
-        y_train,
-        n_splits,
-        scorer,
-        dest_folder,
-        transform_target,
+        wf, alg, X_train_2_nn, y_train, n_splits, scorer, dest_folder, transform_target,
     )
 
-    _time_series_plots(wf, predictions)
+    _regression_plots(
+        wf, alg, X_train_2_nn, y_train, X_test_2_nn, y_test, dest_folder,
+    )
+
+    _time_series_plots(wf, predictions_nn)
 

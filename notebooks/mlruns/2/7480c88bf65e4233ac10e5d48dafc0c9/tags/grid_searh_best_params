@@ -1,1 +1,0 @@
-{'knn__regressor__algorithm': 'auto', 'knn__regressor__metric': 'cityblock', 'knn__regressor__n_neighbors': 29, 'knn__regressor__p': 1, 'knn__regressor__weights': 'uniform'}
