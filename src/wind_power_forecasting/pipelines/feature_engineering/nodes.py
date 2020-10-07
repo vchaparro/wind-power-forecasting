@@ -20,13 +20,13 @@ from wind_power_forecasting.nodes import utils
 
 
 def _get_wind_speed(x: pd.DataFrame) -> float:
-    """ Function to get wind speed from wind velocity components U and V.
-    
-        Args:
-            x: Features data frame containing components U and V as columns.
-            
-        Returns: 
-            Wind speed for each pair <U,V>.
+    """Function to get wind speed from wind velocity components U and V.
+
+    Args:
+        x: Features data frame containing components U and V as columns.
+
+    Returns:
+        Wind speed for each pair <U,V>.
 
     """
     return float(
@@ -37,13 +37,13 @@ def _get_wind_speed(x: pd.DataFrame) -> float:
 
 
 def _get_wind_dir(x: pd.DataFrame) -> float:
-    """ Function to get wind direction from wind velocity components U and V.
-    
-        Args:
-            x: Features data frame containing components U and V as columns.
-            
-        Returns: 
-            Wind direction for each pair <U,V>.
+    """Function to get wind direction from wind velocity components U and V.
+
+    Args:
+        x: Features data frame containing components U and V as columns.
+
+    Returns:
+        Wind direction for each pair <U,V>.
 
     """
 
@@ -57,15 +57,15 @@ def _get_wind_dir(x: pd.DataFrame) -> float:
 
 
 def _encode_cyclic(data: pd.DataFrame, col: str, max_val: int) -> None:
-    """ Encondes cyclic features using sinusoidal functions.
+    """Encondes cyclic features using sinusoidal functions.
 
-        Args:
-            data: the data frame containing the cyclic features.
-            col: the feature name to be enconded.
-            max_val: the maximum value in each case (for instance: 24 for hour, 12 for month.)
+    Args:
+        data: the data frame containing the cyclic features.
+        col: the feature name to be enconded.
+        max_val: the maximum value in each case (for instance: 24 for hour, 12 for month.)
 
-        Returns:
-            None, it performs the enconding inplace.
+    Returns:
+        None, it performs the enconding inplace.
 
     """
     data[col + "_sin"] = np.sin(2 * np.pi * data[col] / max_val)
@@ -73,15 +73,15 @@ def _encode_cyclic(data: pd.DataFrame, col: str, max_val: int) -> None:
 
 
 def _temperature_in_celsius(df, temp_col):
-    """ Converts temperature units from Kelvin to Celsius.
+    """Converts temperature units from Kelvin to Celsius.
 
-        Args:
-            df: the data frame containing a temperature feature.
-            temp_col: the temperature feature name.
+    Args:
+        df: the data frame containing a temperature feature.
+        temp_col: the temperature feature name.
 
-        Returns:
-            The initial dataframe with the temperature feature in Celsius.
-            
+    Returns:
+        The initial dataframe with the temperature feature in Celsius.
+
     """
     df[col] = pd.Series(
         convert_temperature(np.array(df[temp_col]), "Kelvin", "Celsius")
@@ -90,21 +90,21 @@ def _temperature_in_celsius(df, temp_col):
 
 
 def _add_interaction_terms(df, var_list):
-    """ Adds the possible interaction terms from the list elements.
+    """Adds the possible interaction terms from the list elements.
 
-        Args:
-            var_list: list of features.
+    Args:
+        var_list: list of features.
 
-        Returns:
-            The data frame with the interaction terms as new columns.
-            
+    Returns:
+        The data frame with the interaction terms as new columns.
+
     """
     print("Function to be implemented!")
 
 
 class NewFeaturesAdder(BaseEstimator, TransformerMixin):
-    """ Scikit-learn custom transformer that allows to add new features 
-        derived from the original ones.
+    """Scikit-learn custom transformer that allows to add new features
+    derived from the original ones.
     """
 
     def __init__(
@@ -150,22 +150,49 @@ class NewFeaturesAdder(BaseEstimator, TransformerMixin):
             x_dataset["inv_T"] = 1 / x_dataset["T"]
 
         if self.add_interactions:
-            x_dataset["wspeed_wdir"] = x_dataset["wspeed"] * x_dataset["wdir"]
-
-            if self.add_inv_T:
-                x_dataset["wspeed_invT"] = x_dataset["wspeed"] * x_dataset["inv_T"]
-                x_dataset["wspeed_wdir_invT"] = (
-                    x_dataset["wspeed"] * x_dataset["wdir"] * x_dataset["inv_T"]
+            if not self.add_cycl_feat:
+                x_dataset["wspeed_wdir"] = x_dataset["wspeed"] * x_dataset["wdir"]
+                x_dataset["wspeed_T"] = x_dataset["wspeed"] * x_dataset["T"]
+                x_dataset["wspeed_wdir_T"] = (
+                    x_dataset["wspeed"] * x_dataset["wdir"] * x_dataset["T"]
                 )
+
+                if self.add_inv_T:
+                    x_dataset["wspeed_invT"] = x_dataset["wspeed"] * x_dataset["inv_T"]
+                    x_dataset["wspeed_wdir_invT"] = (
+                        x_dataset["wspeed"] * x_dataset["wdir"] * x_dataset["inv_T"]
+                    )
+            else:
+                x_dataset["wspeed_T"] = x_dataset["wspeed"] * x_dataset["T"]
+                x_dataset["wspeed_wdirsin"] = (
+                    x_dataset["wspeed"] * x_dataset["wdir_sin"]
+                )
+                x_dataset["wspeed_wdircos"] = (
+                    x_dataset["wspeed"] * x_dataset["wdir_cos"]
+                )
+                x_dataset["wspeed_wdirsin_T"] = (
+                    x_dataset["wspeed"] * x_dataset["wdir_sin"] * x_dataset["T"]
+                )
+                x_dataset["wspeed_wdircos_T"] = (
+                    x_dataset["wspeed"] * x_dataset["wdir_cos"] * x_dataset["T"]
+                )
+                if self.add_inv_T:
+                    x_dataset["wspeed_invT"] = x_dataset["wspeed"] * x_dataset["inv_T"]
+                    x_dataset["wspeed_wdirsin_invT"] = (
+                        x_dataset["wspeed"] * x_dataset["wdir_sin"] * x_dataset["inv_T"]
+                    )
+                    x_dataset["wspeed_wdircos_invT"] = (
+                        x_dataset["wspeed"] * x_dataset["wdir_cos"] * x_dataset["inv_T"]
+                    )
 
         return x_dataset
 
 
 def _walklevel(some_dir, level):
     """
-       It works just like os.walk, but you can pass it a level parameter
-       that indicates how deep the recursion will go.
-       If depth is -1 (or less than 0), the full depth is walked.
+    It works just like os.walk, but you can pass it a level parameter
+    that indicates how deep the recursion will go.
+    If depth is -1 (or less than 0), the full depth is walked.
     """
     some_dir = some_dir.rstrip(os.path.sep)
     assert os.path.isdir(some_dir)
@@ -180,12 +207,12 @@ def _walklevel(some_dir, level):
 
 
 def _load_csv_files(loc: str, level=0, header=0) -> Dict:
-    """ It loads all csv files in a location and returns a list of data frames 
-        created from those files. 
+    """It loads all csv files in a location and returns a list of data frames
+    created from those files.
 
-        Args:
-            loc: directory where the csv files are located.
-            level: how deep the recursion will go in the directory. By default is 0.
+    Args:
+        loc: directory where the csv files are located.
+        level: how deep the recursion will go in the directory. By default is 0.
     """
     df_dict = {}
     for dirname, _, filenames in _walklevel(loc, level):
@@ -203,22 +230,22 @@ def feature_engineering(
     add_inv_T: bool,
     add_interactions: bool,
 ) -> (np.ndarray, np.ndarray, List):
-    """ It performs feature engineering pipeline with these steps:
-            - Add new features derived from original ones.
-            - Delete innecesary features.
-            - Apply a power transform + standarization.
+    """It performs feature engineering pipeline with these steps:
+        - Add new features derived from original ones.
+        - Delete innecesary features.
+        - Apply a power transform + standarization.
 
-        Args: 
-            data_source: folder where the primary data is located.
-            add_time_feat: (True/False) to add or not features derived from Time.
-            add_cycle_feat: (True/False) whether to encode cyclic features or not.
-            add_inv_T: (True/False) to add or not 1/T derived feature from T.
-            add_interactions: (True/False) to add or not interaction terms.
-    
+    Args:
+        data_source: folder where the primary data is located.
+        add_time_feat: (True/False) to add or not features derived from Time.
+        add_cycle_feat: (True/False) whether to encode cyclic features or not.
+        add_inv_T: (True/False) to add or not 1/T derived feature from T.
+        add_interactions: (True/False) to add or not interaction terms.
 
-        Returns:
-            X_train and X_test pickle objects prepared for modeling.
-            A list with the dropped unnecessary columns.
+
+    Returns:
+        X_train and X_test pickle objects prepared for modeling.
+        A list with the dropped unnecessary columns.
 
     """
     # Import data sets depending on provided Wind Farm (wf)
@@ -274,14 +301,14 @@ def feature_engineering(
 def save_prepared_data(
     folder: str, X_train, X_test, feature_names: List, WF: str
 ) -> None:
-    """ Saves the prepared data after feature engineering.
+    """Saves the prepared data after feature engineering.
 
-        Args: 
-            folder: the folder where the pickle objects will be saved.
-            WF: Wind Farm identification.
-            
-        Returns:
-            None.
+    Args:
+        folder: the folder where the pickle objects will be saved.
+        WF: Wind Farm identification.
+
+    Returns:
+        None.
     """
     os.makedirs(folder + WF, exist_ok=True)
 
@@ -303,20 +330,20 @@ def show_feature_importance(
     feature_names: List,
     k_best: str,
 ):
-    """ It finds the k most influecers features on target by performing  
-        mutual information regression. 
+    """It finds the k most influecers features on target by performing
+    mutual information regression.
 
-        Args:
-            wf: Wind Farm identification.
-            data_sr: location of data files.
-            X: features data set.
-            feature_names: the name of the features in X.
-            k: the number of features to return. 
-            
-        Returns:
-            A descending ordered list of the k best features. 
-            If k='all' the list can be considered as a feature importance list.
-            
+    Args:
+        wf: Wind Farm identification.
+        data_sr: location of data files.
+        X: features data set.
+        feature_names: the name of the features in X.
+        k: the number of features to return.
+
+    Returns:
+        A descending ordered list of the k best features.
+        If k='all' the list can be considered as a feature importance list.
+
     """
     # Load target data (y_train)
     y = _load_csv_files(data_src + wf + "/", header=None).get("y_train.csv")
@@ -367,7 +394,7 @@ def show_feature_importance(
     )
 
     visualizer.fit(X, y, random_state=0)
-    visualizer.show(outpath=data_dst + "figures/" + wf + "/feature_importance.png",)
+    visualizer.show(
+        outpath=data_dst + "figures/" + wf + "/feature_importance.png",
+    )
     visualizer.show(clear_figure=True)
-    
-

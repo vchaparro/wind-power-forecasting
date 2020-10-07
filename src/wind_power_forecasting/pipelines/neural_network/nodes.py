@@ -66,7 +66,9 @@ def _build_ann(n_hidden=1, n_neurons=30, learning_rate=3e-3, input_shape=[2]):
     ann.add(tf.keras.layers.Dense(1))
     optimizer = tf.keras.optimizers.SGD(lr=learning_rate)
     ann.compile(
-        loss="mse", optimizer=optimizer, metrics=[tf.keras.metrics.MeanAbsoluteError()],
+        loss="mse",
+        optimizer=optimizer,
+        metrics=[tf.keras.metrics.MeanAbsoluteError()],
     )
 
     return ann
@@ -90,17 +92,17 @@ def _regression_plots(
     y_test: np.ndarray,
     dest_folder: str,
 ) -> None:
-    """ Gets several regression related plots.
+    """Gets several regression related plots.
 
-        Args:
-            wf: the Wind Farm.
-            model: the model to explore.
-            Train and test data sets.
+    Args:
+        wf: the Wind Farm.
+        model: the model to explore.
+        Train and test data sets.
 
-        Returns:
-            None, plots show up and are saved 
-            in data/08_reporting/figures.
-            
+    Returns:
+        None, plots show up and are saved
+        in data/08_reporting/figures.
+
     """
     # Get model from received pipeline object
     ctx = context.load_context("../wind-power-forecasting")
@@ -165,20 +167,20 @@ def _validation_plots(
     dest_folder: str,
     transform_target: bool,
 ) -> None:
-    """ Gets several plots for model validation.
+    """Gets several plots for model validation.
 
-        Args:
-            wf: the Wind Farm.
-            alg: the algorithm used to create the model.
-            model: the model to explore.
-            Train and test data sets.
-            scorer, f.i., cape_scorer from create_model node.
-            transform_target: whether the target is power-transformed or not.
+    Args:
+        wf: the Wind Farm.
+        alg: the algorithm used to create the model.
+        model: the model to explore.
+        Train and test data sets.
+        scorer, f.i., cape_scorer from create_model node.
+        transform_target: whether the target is power-transformed or not.
 
-        Returns:
-            None, plots show up and are saved 
-            in data/08_reporting/figures.
-            
+    Returns:
+        None, plots show up and are saved
+        in data/08_reporting/figures.
+
     """
     ctx = ctx = context.load_context("../wind-power-forecasting")
     model_folder = ctx.params.get("folder").get("mdl")
@@ -223,22 +225,22 @@ def train_test_ann(
     scoring: Dict,
     refit: str,
 ) -> object:
-    """ Trains, cross-validates and tunes an ANN algorithm.
+    """Trains, cross-validates and tunes an ANN algorithm.
 
-        Args:
-            wf: Wind Farm identificator.
-            X_train: features training values.
-            y_trai: target traning values.
-            n_splits: number of splits for CV.
-            find_max_kbests: whether to search or not for the maximum number of features to use.
-            max_k_bests: maximum k bests features to use in feature selection
-            scoring: dictionary with the scores for CV multiscoring.
-            refit: the metric used to fit data in CV.
-            transform_target: whether to apply or not a target transformat
+    Args:
+        wf: Wind Farm identificator.
+        X_train: features training values.
+        y_trai: target traning values.
+        n_splits: number of splits for CV.
+        find_max_kbests: whether to search or not for the maximum number of features to use.
+        max_k_bests: maximum k bests features to use in feature selection
+        scoring: dictionary with the scores for CV multiscoring.
+        refit: the metric used to fit data in CV.
+        transform_target: whether to apply or not a target transformat
 
-        Returns:
-            An Grid Search CV scikit learn object.
- 
+    Returns:
+        An Grid Search CV scikit learn object.
+
     """
     ctx = context.load_context("../wind-power-forecasting")
     data = _get_data_by_WF(wf)
@@ -407,10 +409,10 @@ def get_nn_plots(
     scorer: object,
     folder: str,
 ) -> None:
-    """ Several plots related to model analysis.
-        - Regression related plots
-        - Learning and validation plots.
-        - Feature extraction plots.
+    """Several plots related to model analysis.
+    - Regression related plots
+    - Learning and validation plots.
+    - Feature extraction plots.
     """
     ctx = context.load_context("../wind-power-forecasting")
     data = _get_data_by_WF(wf)
@@ -423,12 +425,24 @@ def get_nn_plots(
     dest_folder = folder + "figures/" + wf + "/" + alg + "/"
 
     _validation_plots(
-        wf, alg, X_train_2_nn, y_train, n_splits, scorer, dest_folder, transform_target,
+        wf,
+        alg,
+        X_train_2_nn,
+        y_train,
+        n_splits,
+        scorer,
+        dest_folder,
+        transform_target,
     )
 
     _regression_plots(
-        wf, alg, X_train_2_nn, y_train, X_test_2_nn, y_test, dest_folder,
+        wf,
+        alg,
+        X_train_2_nn,
+        y_train,
+        X_test_2_nn,
+        y_test,
+        dest_folder,
     )
 
     _time_series_plots(wf, predictions_nn)
-

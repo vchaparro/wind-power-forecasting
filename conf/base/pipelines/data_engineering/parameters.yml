@@ -28,15 +28,15 @@ cols_to_interpol:
 fig_id: "outliers"
 
 # The date from we want to split the X and y data sets into train/test sets.
-split_date: "2018-11-13 00:00:00"
+split_date: "2018-11-13 23:00:00"
 
 # Outliers detection parameters
 WF1:
-  top_frac_max: 0.97
-  sparse_bin_width: 0.25
-  frac_std: 0.85
+  top_frac_max: 0.99
+  sparse_bin_width: 0.1
+  frac_std: 0.9
   threshold_type: "scalar"
-  bottom_max: 6.0
+  bottom_max: 5.5
 WF2:
   top_frac_max: 0.97
   sparse_bin_width: 0.15
@@ -58,7 +58,7 @@ WF4:
 WF5:
   top_frac_max: 0.97
   sparse_bin_width: 0.1
-  frac_std: 0.55
+  frac_std: 0.9
   threshold_type: "scalar"
   bottom_max: 5.0
 WF6:

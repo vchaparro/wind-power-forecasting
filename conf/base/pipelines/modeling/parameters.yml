@@ -1,8 +1,8 @@
 ## Global parameters for create model node #
 ############################################
 alg: ""
-find_max_kbests: False
-max_k_bests: 4
+find_max_kbests: True
+max_k_bests: 14
 n_splits: 7
 transform_target: False
 scoring:
@@ -20,7 +20,7 @@ mars_hypms:
   penalty: [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
 
 knn_hypms:
-  max_n_neighbors: 50
+  max_n_neighbors: 30
   algorithm: ["kd_tree", "ball_tree"]
   weights: ["uniform", "distance"]
   metric: ["cityblock", "euclidean", "manhattan"]

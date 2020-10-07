@@ -35,17 +35,20 @@ from wind_power_forecasting.pipelines.data_engineering.nodes import (
 
 
 def get_data_by_wf(
-    wf: str, X_train: pd.DataFrame, X_test: pd.DataFrame, y_train: pd.Series,
+    wf: str,
+    X_train: pd.DataFrame,
+    X_test: pd.DataFrame,
+    y_train: pd.Series,
 ) -> pd.DataFrame:
-    """ Get data filterd by Wind Farm (wf).
+    """Get data filterd by Wind Farm (wf).
 
-        Args:
-            X: X_train_raw.
-            **y: y_train_raw (optional) 
-            wf: Wind Farm identification.
-            
-        Returns:
-            X, y data frames filtered by Wind Farm.
+    Args:
+        X: X_train_raw.
+        **y: y_train_raw (optional)
+        wf: Wind Farm identification.
+
+    Returns:
+        X, y data frames filtered by Wind Farm.
     """
 
     # Row selection by WF
@@ -68,16 +71,16 @@ def get_data_by_wf(
 def add_new_cols(
     new_cols: list, X_train: pd.DataFrame, X_test: pd.DataFrame
 ) -> pd.DataFrame:
-    """ Adds new columns to a given data frame.
-    
-        Args: 
-            new_cols: List with the column names to be added.
-            X: data frame that will be expanded with new_cols.
-            
-        Returns:
-            X expanded with the new columns and the columns that 
-            contains missing values.
-            
+    """Adds new columns to a given data frame.
+
+    Args:
+        new_cols: List with the column names to be added.
+        X: data frame that will be expanded with new_cols.
+
+    Returns:
+        X expanded with the new columns and the columns that
+        contains missing values.
+
     """
     cols_train = X_train.columns[3:]
     cols_test = X_test.columns[3:-9]
@@ -97,15 +100,15 @@ def input_missing_values(
     cols_to_interpol: List,
 ) -> pd.DataFrame:
     """Impute missing values based on the gap time between forecasted timestamp and NWP run.
-    
-        Args:
-            X: the data frame where the missing will be inputed.
-            cols: columns with missig values due to daily frequency of NWP.
-            cols_to_interpol: columns with missing values due to hourly frequency of NWP.
-                       
-        Returns:
-            X: the data frame with inputed missing values.
-    
+
+    Args:
+        X: the data frame where the missing will be inputed.
+        cols: columns with missig values due to daily frequency of NWP.
+        cols_to_interpol: columns with missing values due to hourly frequency of NWP.
+
+    Returns:
+        X: the data frame with inputed missing values.
+
     """
     regex = r"NWP(?P<NWP>\d{1})_(?P<run>\d{2}h)_(?P<fc_day>D\W?\d?)_(?P<weather_var>\w{1,4})"
     p = re.compile(regex)
@@ -169,13 +172,13 @@ def input_missing_values(
 def select_best_NWP_features(
     X_train: pd.DataFrame, X_test: pd.DataFrame
 ) -> pd.DataFrame:
-    """ Select the features of the best NWP.
+    """Select the features of the best NWP.
 
-        Args:
-            X: features data frame.
-            
-        Returns:
-            Data frame with the best NWP features.
+    Args:
+        X: features data frame.
+
+    Returns:
+        Data frame with the best NWP features.
 
     """
 
@@ -218,15 +221,15 @@ def select_best_NWP_features(
 def fix_negative_values(
     X_train: pd.DataFrame, X_test: pd.DataFrame, y_train: pd.Series
 ) -> Dict:
-    """ Replaces negative values of CLCT and power production by 0.
-    
-        Args:
-            X: the data frame containing CLCT column.
-            y: the target with Power values.
-            
-        Returns:
-            None, it replaces the values inplace.
-    
+    """Replaces negative values of CLCT and power production by 0.
+
+    Args:
+        X: the data frame containing CLCT column.
+        y: the target with Power values.
+
+    Returns:
+        None, it replaces the values inplace.
+
     """
     processed_data = {}
     X_train.loc[X_train["CLCT"] < 0, "CLCT"] = 0.0
@@ -239,40 +242,56 @@ def fix_negative_values(
     return processed_data
 
 
-def export_data(folder: str, WF: str, df_dict: Dict,) -> None:
-    """ Export data frames to csv.
+def export_data(
+    folder: str,
+    WF: str,
+    df_dict: Dict,
+) -> None:
+    """Export data frames to csv.
 
-        Args: 
-            folder: the folder where the csv files will be saved.
-            WF: Wind Farm identification.
-            df_dict: a dictionary with key, value pairs df name, df values.
-            
-        Returns:
-            None.
+    Args:
+        folder: the folder where the csv files will be saved.
+        WF: Wind Farm identification.
+        df_dict: a dictionary with key, value pairs df name, df values.
+
+    Returns:
+        None.
     """
     os.makedirs(folder + WF, exist_ok=True)
 
-    for key, value in df_dict.items():
-        value.to_csv(
-            folder + "{}/{}.csv".format(WF, key),
-            index=False,
-            date_format="%d/%m/%Y %H:%M",
-        )
+    X_train = df_dict.get("X_train")
+    X_test = df_dict.get("X_test")
+    y_train = df_dict.get("y_train")
+
+    X_train.to_csv(
+        folder + "{}/{}.csv".format(WF, "X_train"),
+        index=False,
+        date_format="%d/%m/%Y %H:%M",
+    )
+
+    X_test.to_csv(
+        folder + "{}/{}.csv".format(WF, "X_test"),
+        index=False,
+        date_format="%d/%m/%Y %H:%M",
+    )
+    y_train.to_csv(
+        folder + "{}/{}.csv".format(WF, "y_train"), index=False, header=False
+    )
 
 
 #### Modeling nodes #####
 
 
 def train_model(alg: str, wf: str) -> object:
-    """ Retrains selected model using k-fold cross
-        validation.
+    """Retrains selected model using k-fold cross
+    validation.
 
-        Args:
-            alg: model to train.
-            wf: wind farm identificator.
+    Args:
+        alg: model to train.
+        wf: wind farm identificator.
 
-        Returns:
-            The re-trained model ready for predictions.
+    Returns:
+        The re-trained model ready for predictions.
     """
 
     # Load context and get model folder.
@@ -363,9 +382,9 @@ def train_model(alg: str, wf: str) -> object:
 
     elif alg == "ANN":
         # Load model
-        model = tf.keras.models.load_model(
-            source_folder + "{0}/{1}.h5".format(wf, alg)
-        )
+        model = tf.keras.models.load_model(source_folder + "{0}/{1}.h5".format(wf, alg))
+        print(model)
+        input("...")
 
         # Re-train the model with ts cross validation
         model.fit(X_train, y_train)
@@ -383,16 +402,16 @@ def train_model(alg: str, wf: str) -> object:
 
 
 def predict(wf: str, model: object, output_folder: str, alg: str) -> np.ndarray:
-    """ Predicts energy power production using
-        on testing data of CNR
+    """Predicts energy power production using
+    on testing data of CNR
 
-        Args:
-            wf: wind darm identificator.
-            model: the re-trained model to use.
+    Args:
+        wf: wind darm identificator.
+        model: the re-trained model to use.
 
-        Returns:
-            Predicitons ready to be appended in submission 
-            file for CNR challenge.
+    Returns:
+        Predicitons ready to be appended in submission
+        file for CNR challenge.
 
     """
     # Load test data for the wind farm
@@ -405,7 +424,10 @@ def predict(wf: str, model: object, output_folder: str, alg: str) -> np.ndarray:
     predictions = model.predict(X_test_pped)
 
     # Build prediction matrix (ID,Production)
-    pred_matrix = np.stack((np.array(ID_test).astype(int), predictions), axis=-1)
+
+    pred_matrix = np.stack(
+        (np.array(ID_test).astype(int), predictions.reshape(-1)), axis=-1
+    )
     df_pred = pd.DataFrame(
         data=pred_matrix.reshape(-1, 2), columns=["ID", "Production"]
     )
@@ -422,7 +444,10 @@ def predict(wf: str, model: object, output_folder: str, alg: str) -> np.ndarray:
             output_folder + "submission_{}.csv".format(alg), index=False, sep=","
         )
     else:
-        submission_df = submission_df.append(df_pred, ignore_index=True,)
+        submission_df = submission_df.append(
+            df_pred,
+            ignore_index=True,
+        )
         submission_df.to_csv(
             output_folder + "submission_{}.csv".format(alg),
             index=False,

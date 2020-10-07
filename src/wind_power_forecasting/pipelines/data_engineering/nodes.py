@@ -18,11 +18,11 @@ from kedro.framework import context
 
 def log_running_time(func: Callable) -> Callable:
     """Decorator for logging node execution time.
-        Args:
-            func: Function to be executed.
-            
-        Returns:
-            Decorator for logging the running time.
+    Args:
+        func: Function to be executed.
+
+    Returns:
+        Decorator for logging the running time.
     """
 
     @wraps(func)
@@ -39,13 +39,13 @@ def log_running_time(func: Callable) -> Callable:
 
 
 def _get_wind_speed(x: pd.DataFrame) -> float:
-    """ Function to get wind speed from wind velocity components U and V.
-    
-        Args:
-            x: Feature data frame containing components U and V as columns.
-            
-        Returns: 
-            Wind speed for each pair <U,V>.
+    """Function to get wind speed from wind velocity components U and V.
+
+    Args:
+        x: Feature data frame containing components U and V as columns.
+
+    Returns:
+        Wind speed for each pair <U,V>.
 
     """
 
@@ -57,7 +57,11 @@ def _get_wind_speed(x: pd.DataFrame) -> float:
 
 
 def _save_fig(
-    fig_id: int, folder: str, tight_layout=True, fig_extension="png", resolution=300,
+    fig_id: int,
+    folder: str,
+    tight_layout=True,
+    fig_extension="png",
+    resolution=300,
 ):
     os.makedirs(folder, exist_ok=True)
     path = os.path.join(folder, fig_id + "." + fig_extension)
@@ -71,20 +75,21 @@ def _save_fig(
 def _plot_flagged_pc(ws, p, flag_bool, alpha):
     plt.scatter(ws, p, s=3, alpha=alpha)
     plt.scatter(ws[flag_bool], p[flag_bool], s=3, c="red")
-    plt.xlabel("Wind speed (m/s)")
-    plt.ylabel("Power (MWh)")
+    plt.xlabel("velocidad (m/s)")
+    plt.ylabel("potencia (MWh)")
+    # plt.show()
 
 
 def get_data_by_wf(X: pd.DataFrame, wf: str, y: pd.Series) -> pd.DataFrame:
-    """ Get data filterd by Wind Farm (wf).
+    """Get data filterd by Wind Farm (wf).
 
-        Args:
-            X: X_train_raw.
-            **y: y_train_raw (optional) 
-            wf: Wind Farm identification.
-            
-        Returns:
-            X, y data frames filtered by Wind Farm.
+    Args:
+        X: X_train_raw.
+        **y: y_train_raw (optional)
+        wf: Wind Farm identification.
+
+    Returns:
+        X, y data frames filtered by Wind Farm.
     """
 
     # Row selection by WF
@@ -102,16 +107,16 @@ def get_data_by_wf(X: pd.DataFrame, wf: str, y: pd.Series) -> pd.DataFrame:
 
 
 def add_new_cols(new_cols: list, X: pd.DataFrame) -> pd.DataFrame:
-    """ Adds new columns to a given data frame.
-    
-        Args: 
-            new_cols: List with the column names to be added.
-            X: data frame that will be expanded with new_cols.
-            
-        Returns:
-            X expanded with the new columns and the columns that 
-            contains missing values.
-            
+    """Adds new columns to a given data frame.
+
+    Args:
+        new_cols: List with the column names to be added.
+        X: data frame that will be expanded with new_cols.
+
+    Returns:
+        X expanded with the new columns and the columns that
+        contains missing values.
+
     """
     cols = X.columns[3:]
     for col in new_cols:
@@ -121,15 +126,15 @@ def add_new_cols(new_cols: list, X: pd.DataFrame) -> pd.DataFrame:
 
 
 def _interpolate_missing_values(X: pd.DataFrame, cols: List) -> pd.DataFrame:
-    """ Imputes those missing values due to the NWP's frequency in data providing.
+    """Imputes those missing values due to the NWP's frequency in data providing.
 
-        Args:
-            X: Data frame where missing values are being inputed. 
-            cols: list of column names of the data frame that have missing values.
-            
-        Returns:
-            None, missing values are inputed inplace.
-             
+    Args:
+        X: Data frame where missing values are being inputed.
+        cols: list of column names of the data frame that have missing values.
+
+    Returns:
+        None, missing values are inputed inplace.
+
     """
     X.index = X["Time"]
     del X["Time"]
@@ -149,15 +154,15 @@ def input_missing_values(
     X: pd.DataFrame, cols: List, cols_to_interpol: List
 ) -> pd.DataFrame:
     """Impute missing values based on the gap time between forecasted timestamp and NWP run.
-    
-        Args:
-            X: the data frame where the missing will be inputed.
-            cols: columns with missig values due to daily frequency of NWP.
-            cols_to_interpol: columns with missing values due to hourly frequency of NWP.
-                       
-        Returns:
-            X: the data frame with inputed missing values.
-    
+
+    Args:
+        X: the data frame where the missing will be inputed.
+        cols: columns with missig values due to daily frequency of NWP.
+        cols_to_interpol: columns with missing values due to hourly frequency of NWP.
+
+    Returns:
+        X: the data frame with inputed missing values.
+
     """
     regex = r"NWP(?P<NWP>\d{1})_(?P<run>\d{2}h)_(?P<fc_day>D\W?\d?)_(?P<weather_var>\w{1,4})"
     p = re.compile(regex)
@@ -196,19 +201,19 @@ def input_missing_values(
 
 
 def select_best_NWP_features(X: pd.DataFrame) -> pd.DataFrame:
-    """ Select the features of the best NWP.
+    """Select the features of the best NWP.
 
-        Args:
-            X: features data frame.
-            
-        Returns:
-            Data frame with the best NWP features.
+    Args:
+        X: features data frame.
+
+    Returns:
+        Data frame with the best NWP features.
 
     """
     # Select the best NWP predictions for weather predictors
-    X["U"] = (X.NWP1_U + X.NWP2_U + X.NWP3_U + X.NWP4_U) / 4
-    X["V"] = (X.NWP1_V + X.NWP2_V + X.NWP3_V + X.NWP4_V) / 4
-    X["T"] = (X.NWP1_T + X.NWP3_T) / 2
+    X["U"] = X.NWP2_U
+    X["V"] = X.NWP1_V
+    X["T"] = X.NWP3_T
     X["CLCT"] = X.NWP4_CLCT
 
     # Select final features
@@ -218,19 +223,19 @@ def select_best_NWP_features(X: pd.DataFrame) -> pd.DataFrame:
 
 
 def _find_outliers(X: pd.DataFrame, y: pd.Series, wf: str, *args) -> Dict[str, list]:
-    """ Finds outliers based on power curve, using a binning method.
-    
-        Args:
-            X: Feature data frame.
-            y: target.
-            parameters: dictionary containing the configuration parameters.
-            
-        Returns:
-            outliers: dictionary with the different type of outliers found.
+    """Finds outliers based on power curve, using a binning method.
+
+    Args:
+        X: Feature data frame.
+        y: target.
+        parameters: dictionary containing the configuration parameters.
+
+    Returns:
+        outliers: dictionary with the different type of outliers found.
 
     """
     # Loading context
-    ctx = context.load_context("../wind-power-forecasting")
+    ctx = context.load_context("../wind-power-forecasting/")
 
     # Dictionary to save boolean outlier marker
     outliers = {}
@@ -277,9 +282,11 @@ def _find_outliers(X: pd.DataFrame, y: pd.Series, wf: str, *args) -> Dict[str, l
     )
 
     # Plot outliers
-    _plot_flagged_pc(X_.wspeed, X_.Production, np.repeat("True", len(X_.wspeed)), 0.3)
     _plot_flagged_pc(
-        X_.wspeed, X_.Production, (top) | (sparse) | (bottom), 0.3,
+        X_.wspeed,
+        X_.Production,
+        (top) | (sparse) | (bottom),
+        0.3,
     )
 
     if args:
@@ -288,8 +295,10 @@ def _find_outliers(X: pd.DataFrame, y: pd.Series, wf: str, *args) -> Dict[str, l
         fig_id = "outliers"
 
     _save_fig(
-        fig_id, ctx.params.get("folder").get("rep") + "figures/" + wf + "/",
+        fig_id,
+        ctx.params.get("folder").get("rep") + "figures/" + wf + "/",
     )
+
     plt.close()
 
     # Populate the dictionary
@@ -303,16 +312,16 @@ def _find_outliers(X: pd.DataFrame, y: pd.Series, wf: str, *args) -> Dict[str, l
 
 
 @log_running_time
-def clean_outliers(X: pd.DataFrame, y: pd.Series, wf: str, *args) -> pd.DataFrame:
-    """ It removes the outliers and returned cleaned X, y.
-    
-        Args:
-            X: the feature data frame.
-            y: the target.
-            
-        Returns:
-            Cleaned X, y.
-            
+def clean_outliers(X: pd.DataFrame, y: pd.Series, wf: str, *args) -> tuple:
+    """It removes the outliers and returned cleaned X, y.
+
+    Args:
+        X: the feature data frame.
+        y: the target.
+
+    Returns:
+        Cleaned X, y.
+
     """
     # Find outliers
     outliers = _find_outliers(X, y, wf, *args)
@@ -338,13 +347,13 @@ def clean_outliers(X: pd.DataFrame, y: pd.Series, wf: str, *args) -> pd.DataFram
 
 
 def fix_negative_values(X: pd.DataFrame) -> tuple:
-    """ Replaces negative values of CLCT by 0.
-    
-        Args:
-            X: the data frame containing CLCT column.
-        Returns:
-            None, it replaces the values inplace.
-    
+    """Replaces negative values of CLCT by 0.
+
+    Args:
+        X: the data frame containing CLCT column.
+    Returns:
+        None, it replaces the values inplace.
+
     """
     X.loc[X["CLCT"] < 0, "CLCT"] = 0.0
 
@@ -352,14 +361,14 @@ def fix_negative_values(X: pd.DataFrame) -> tuple:
 
 
 def split_data_by_date(date: str, X: pd.DataFrame, y: pd.Series) -> Dict:
-    """ It splits X and y sets by a 'Time' value  into sets for training and testing. 
+    """It splits X and y sets by a 'Time' value  into sets for training and testing.
 
-        Args:
-            X: cleaned X_train features data frame.
-            y: cleaned y_train target dta frame.
-            
-        Returns: 
-            A dictionary with the four sets (X_train, y_train, X_test, y_test).
+    Args:
+        X: cleaned X_train features data frame.
+        y: cleaned y_train target dta frame.
+
+    Returns:
+        A dictionary with the four sets (X_train, y_train, X_test, y_test).
     """
     sets = {}
     date_cut = dt.datetime.strptime(date, "%Y-%m-%d %H:%M:%S")
@@ -374,26 +383,53 @@ def split_data_by_date(date: str, X: pd.DataFrame, y: pd.Series) -> Dict:
     sets["y_train"] = y_train
     sets["y_test"] = y_test
 
+    sets["y_train"].name = None
+    sets["y_test"].name = None
+
     return sets
 
 
 @log_running_time
-def export_data(folder: str, WF: str, df_dict: Dict,) -> None:
-    """ Export data frames to csv.
+def export_data(
+    folder: str,
+    WF: str,
+    df_dict: Dict,
+) -> None:
+    """Export data frames to csv.
 
-        Args: 
-            folder: the folder where the csv files will be saved.
-            WF: Wind Farm identification.
-            df_dict: a dictionary with key, value pairs df name, df values.
-            
-        Returns:
-            None.
+    Args:
+        folder: the folder where the csv files will be saved.
+        WF: Wind Farm identification.
+        df_dict: a dictionary with key, value pairs df name, df values.
+
+    Returns:
+        None.
     """
     os.makedirs(folder + WF, exist_ok=True)
-    for key, value in df_dict.items():
+    X_train = df_dict.get("X_train")
+    X_test = df_dict.get("X_test")
+    y_train = df_dict.get("y_train")
+    y_test = df_dict.get("y_test")
+
+    X_train.to_csv(
+        folder + "{}/{}.csv".format(WF, "X_train"),
+        index=False,
+        date_format="%d/%m/%Y %H:%M",
+    )
+
+    X_test.to_csv(
+        folder + "{}/{}.csv".format(WF, "X_test"),
+        index=False,
+        date_format="%d/%m/%Y %H:%M",
+    )
+    y_train.to_csv(
+        folder + "{}/{}.csv".format(WF, "y_train"), index=False, header=False
+    )
+    y_test.to_csv(folder + "{}/{}.csv".format(WF, "y_test"), index=False, header=False)
+
+    """for key, value in df_dict.items():
         value.to_csv(
             folder + "{}/{}.csv".format(WF, key),
             index=False,
             date_format="%d/%m/%Y %H:%M",
-        )
-
+        )"""

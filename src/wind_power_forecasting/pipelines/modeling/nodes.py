@@ -8,6 +8,7 @@ from functools import wraps
 from pathlib import Path
 from typing import Callable, Dict, List
 
+
 import cufflinks as cf
 import matplotlib.pyplot as plt
 import mlflow
@@ -15,6 +16,7 @@ import mlflow.sklearn
 import numpy as np
 import pandas as pd
 import plotly
+import plotly.express as px
 import tensorflow as tf
 from kedro.framework import context
 from mlflow import log_artifact, log_metric, log_param
@@ -58,19 +60,16 @@ def _log_gcv_scores(gcv: object, scoring: Dict, alg: str) -> Dict:
 
         if (scorer == "RMSE") or (scorer == "MAE") or (scorer == "CAPE"):
             logger.info(
-                "Best CV {0}:{1:.2f}, std:{2:.2f}".format(
-                    scorer, -best_CV, best_CV_std)
+                "Best CV {0}:{1:.2f}, std:{2:.2f}".format(scorer, -best_CV, best_CV_std)
             )
         else:
             logger.info(
-                "Best CV {0}:{1:.2f}, std:{2:.2f}".format(
-                    scorer, best_CV, best_CV_std)
+                "Best CV {0}:{1:.2f}, std:{2:.2f}".format(scorer, best_CV, best_CV_std)
             )
 
     # Log best hyperparameters found
     logger.info(
-        "Best hyperparameters found for {0} : {1}".format(
-            alg, gcv.best_params_)
+        "Best hyperparameters found for {0} : {1}".format(alg, gcv.best_params_)
     )
 
 
@@ -142,16 +141,16 @@ def _get_data_by_WF(wf: str):
 
 
 def _save_model(folder: str, model, wf: str, alg: str) -> None:
-    """ Saves the trained model.
+    """Saves the trained model.
 
-        Args: 
-            folder: the folder where the pickle objects will be saved.
-            WF: Wind Farm identification.
-            model: the model object.
-            alg: the algorithm used to create the model.
+    Args:
+        folder: the folder where the pickle objects will be saved.
+        WF: Wind Farm identification.
+        model: the model object.
+        alg: the algorithm used to create the model.
 
-        Returns:
-            None.
+    Returns:
+        None.
     """
     os.makedirs(folder + wf, exist_ok=True)
 
@@ -169,21 +168,21 @@ def _build_mars(
     refit: str,
     transform_target: bool,
 ) -> object:
-    """ Trains, cross-validates and tunes a 
-        Multivariate Adaptative Regression Splines (MARS) algorithm.
+    """Trains, cross-validates and tunes a
+    Multivariate Adaptative Regression Splines (MARS) algorithm.
 
-        Args:
-            X_train: features training values.
-            y_trai: target traning values.
-            n_splits: number of splits for CV.
-            find_max_kbests: whether to search or not for the maximum number of features to use.
-            max_k_bests: maximum k bests features to use in feature selection
-            scoring: dictionary with the scores for CV multiscoring.
-            refit: the metric used to fit data in CV.
-            transform_target: whether to apply or not a target transformation.
+    Args:
+        X_train: features training values.
+        y_trai: target traning values.
+        n_splits: number of splits for CV.
+        find_max_kbests: whether to search or not for the maximum number of features to use.
+        max_k_bests: maximum k bests features to use in feature selection
+        scoring: dictionary with the scores for CV multiscoring.
+        refit: the metric used to fit data in CV.
+        transform_target: whether to apply or not a target transformation.
 
-        Returns:
-            An Grid Search CV scikit learn object.
+    Returns:
+        An Grid Search CV scikit learn object.
 
     """
     ctx = context.load_context("../wind-power-forecasting")
@@ -198,12 +197,15 @@ def _build_mars(
     if transform_target:
         mars = TransformedTargetRegressor(
             regressor=Earth(feature_importance_type="gcv"),
-            transformer=PowerTransformer(
-                method="yeo-johnson", standardize=True),
+            transformer=PowerTransformer(method="yeo-johnson", standardize=True),
             check_inverse=False,
         )
         pipeline = Pipeline(
-            [("univariate_sel", selec_k_best), ("mars", mars), ])
+            [
+                ("univariate_sel", selec_k_best),
+                ("mars", mars),
+            ]
+        )
         param_grid = {
             "mars__regressor__max_degree": ctx.params.get("mars_hypms").get(
                 "max_degree"
@@ -218,7 +220,11 @@ def _build_mars(
     else:
         mars = Earth(feature_importance_type="gcv")
         pipeline = Pipeline(
-            [("univariate_sel", selec_k_best), ("mars", mars), ])
+            [
+                ("univariate_sel", selec_k_best),
+                ("mars", mars),
+            ]
+        )
         param_grid = {
             "mars__max_degree": ctx.params.get("mars_hypms").get("max_degree"),
             "mars__allow_linear": ctx.params.get("mars_hypms").get("allow_linear"),
@@ -254,8 +260,7 @@ def _test_best_mars(
     transform_target,
 ):
 
-    # Get the names of the selected best features and transforms
-    # X_train and X_test to use later on in 'get_model_plots'.
+    # Feature selection with the best k value obtanined in Grid Search
     selec_k_best = SelectKBest(
         mutual_info_regression, k=best_mars.get_params().get("univariate_sel__k")
     )
@@ -273,16 +278,8 @@ def _test_best_mars(
     # Predict
     predictions = best_mars.predict(X_test)
 
-    # build prediction matrix (ID,Production)
-    pred_matrix = np.stack(
-        (np.array(y_test.index.to_series()).astype(int), predictions), axis=-1
-    )
-    df_pred = pd.DataFrame(
-        data=pred_matrix.reshape(-1, 2), columns=["ID", "Production"]
-    )
-
     # fix negative values in target predictions
-    df_pred.loc[df_pred["Production"] < 0, "Production"] = 0.0
+    predictions[predictions < 0] = 0.0
 
     # get metrics
     (rmse, mae, r2, cape) = _eval_metrics(y_test, predictions)
@@ -297,8 +294,7 @@ def _test_best_mars(
     ### MLFlow logging ####
 
     mlflow.log_param("selected_features", selected_feat)
-    mlflow.log_param("k_best_features",
-                     best_mars.get_params().get("univariate_sel__k"))
+    mlflow.log_param("k_best_features", best_mars.get_params().get("univariate_sel__k"))
 
     if transform_target:
         mlflow.log_param(
@@ -311,10 +307,8 @@ def _test_best_mars(
             "allow_linear", best_mars.get_params().get("mars__regressor__allow_linear")
         )
     else:
-        mlflow.log_param(
-            "max_degree", best_mars.get_params().get("mars__max_degree"))
-        mlflow.log_param(
-            "penalty", best_mars.get_params().get("mars__penalty"))
+        mlflow.log_param("max_degree", best_mars.get_params().get("mars__max_degree"))
+        mlflow.log_param("penalty", best_mars.get_params().get("mars__penalty"))
         mlflow.log_param(
             "allow_linear", best_mars.get_params().get("mars__allow_linear")
         )
@@ -344,20 +338,20 @@ def _build_knn(
     refit: str,
     transform_target: bool,
 ) -> object:
-    """ Trains, cross-validates and tunes a k-NN algorithm.
+    """Trains, cross-validates and tunes a k-NN algorithm.
 
-        Args:
-            X_train: features training values.
-            y_trai: target traning values.
-            n_splits: number of splits for CV.
-            find_max_kbests: whether to search or not for the maximum number of features to use.
-            max_k_bests: maximum k bests features to use in feature selection
-            scoring: dictionary with the scores for CV multiscoring.
-            refit: the metric used to fit data in CV.
-            transform_target: whether to apply or not a target transformat
+    Args:
+        X_train: features training values.
+        y_trai: target traning values.
+        n_splits: number of splits for CV.
+        find_max_kbests: whether to search or not for the maximum number of features to use.
+        max_k_bests: maximum k bests features to use in feature selection
+        scoring: dictionary with the scores for CV multiscoring.
+        refit: the metric used to fit data in CV.
+        transform_target: whether to apply or not a target transformat
 
-        Returns:
-            An Grid Search CV scikit learn object.
+    Returns:
+        An Grid Search CV scikit learn object.
 
     """
     selec_k_best = SelectKBest(mutual_info_regression, k=1)
@@ -369,14 +363,12 @@ def _build_knn(
 
     # Load knn hyperparams
     ctx = context.load_context("../wind-power-forecasting")
-    n_neighbors = list(range(1, ctx.params.get(
-        "knn_hypms").get("max_n_neighbors"), 2))
+    n_neighbors = list(range(1, ctx.params.get("knn_hypms").get("max_n_neighbors"), 2))
 
     if transform_target:
         knn = TransformedTargetRegressor(
             regressor=KNeighborsRegressor(),
-            transformer=PowerTransformer(
-                method="yeo-johnson", standardize=True),
+            transformer=PowerTransformer(method="yeo-johnson", standardize=True),
             check_inverse=False,
         )
         pipeline = Pipeline([("univariate_sel", selec_k_best), ("knn", knn)])
@@ -443,13 +435,8 @@ def _test_best_knn(
 
     predictions = best_knn.predict(X_test)
 
-    # build prediction matrix (ID,Production)
-    pred_matrix = np.stack(
-        (np.array(y_test.index.to_series()).astype(int), predictions), axis=-1
-    )
-    df_pred = pd.DataFrame(
-        data=pred_matrix.reshape(-1, 2), columns=["ID", "Production"]
-    )
+    # fix negative values in target predictions
+    predictions[predictions < 0] = 0.0
 
     # get metrics
     (rmse, mae, r2, cape) = _eval_metrics(y_test, predictions)
@@ -465,8 +452,7 @@ def _test_best_knn(
 
     # pre-processing
     mlflow.log_param("selected_features", selected_feat)
-    mlflow.log_param("k_best_features",
-                     best_knn.get_params().get("univariate_sel__k"))
+    mlflow.log_param("k_best_features", best_knn.get_params().get("univariate_sel__k"))
 
     # grid search parameters
     if transform_target:
@@ -479,14 +465,11 @@ def _test_best_knn(
         mlflow.log_param(
             "weights", best_knn.get_params().get("knn__regressor__weights")
         )
-        mlflow.log_param("metric", best_knn.get_params().get(
-            "knn__regressor__metric"))
+        mlflow.log_param("metric", best_knn.get_params().get("knn__regressor__metric"))
 
     else:
-        mlflow.log_param(
-            "n_neighbors", best_knn.get_params().get("knn__n_neighbors"))
-        mlflow.log_param(
-            "algorithm", best_knn.get_params().get("knn__algorithm"))
+        mlflow.log_param("n_neighbors", best_knn.get_params().get("knn__n_neighbors"))
+        mlflow.log_param("algorithm", best_knn.get_params().get("knn__algorithm"))
         mlflow.log_param("weights", best_knn.get_params().get("knn__weights"))
         mlflow.log_param("metric", best_knn.get_params().get("knn__metric"))
 
@@ -515,19 +498,19 @@ def _build_svm(
     refit: str,
     transform_target: bool,
 ) -> object:
-    """ Trains, cross-validates and tunes a SVM algorithm.
+    """Trains, cross-validates and tunes a SVM algorithm.
 
-        Args:
-            X_train: features training values.
-            y_trai: target traning values.
-            n_splits: number of splits for CV.
-            k_bests: list with the k bests feature to use in feature selection
-            scoring: dictionary with the scores for CV multiscoring.
-            refit: the metric used to fit data in CV.
-            transform_target: whether to transform or not the target.
+    Args:
+        X_train: features training values.
+        y_trai: target traning values.
+        n_splits: number of splits for CV.
+        k_bests: list with the k bests feature to use in feature selection
+        scoring: dictionary with the scores for CV multiscoring.
+        refit: the metric used to fit data in CV.
+        transform_target: whether to transform or not the target.
 
-        Returns:
-            An Grid Search CV scikit learn object.
+    Returns:
+        An Grid Search CV scikit learn object.
 
     """
     ctx = context.load_context("../wind-power-forecasting")
@@ -542,8 +525,7 @@ def _build_svm(
     if transform_target:
         svm = TransformedTargetRegressor(
             regressor=SVR(),
-            transformer=PowerTransformer(
-                method="yeo-johnson", standardize=True),
+            transformer=PowerTransformer(method="yeo-johnson", standardize=True),
             check_inverse=False,
         )
         pipeline = Pipeline([("univariate_sel", selec_k_best), ("svm", svm)])
@@ -610,13 +592,8 @@ def _test_best_svm(
 
     predictions = best_svm.predict(X_test)
 
-    # build prediction matrix (ID,Production)
-    pred_matrix = np.stack(
-        (np.array(y_test.index.to_series()).astype(int), predictions), axis=-1
-    )
-    df_pred = pd.DataFrame(
-        data=pred_matrix.reshape(-1, 2), columns=["ID", "Production"]
-    )
+    # fix negative values in target predictions
+    predictions[predictions < 0] = 0.0
 
     # get metrics
     (rmse, mae, r2, cape) = _eval_metrics(y_test, predictions)
@@ -632,16 +609,13 @@ def _test_best_svm(
 
     # pre-processing
     mlflow.log_param("selected_features", selected_feat)
-    mlflow.log_param("k_best_features",
-                     best_svm.get_params().get("univariate_sel__k"))
+    mlflow.log_param("k_best_features", best_svm.get_params().get("univariate_sel__k"))
 
     # grid search parameters
     if transform_target:
-        mlflow.log_param("kernel", best_svm.get_params().get(
-            "svm__regressor__kernel"))
+        mlflow.log_param("kernel", best_svm.get_params().get("svm__regressor__kernel"))
         mlflow.log_param("C", best_svm.get_params().get("svm__regressor__C"))
-        mlflow.log_param("gamma", best_svm.get_params().get(
-            "svm__regressor__gamma"))
+        mlflow.log_param("gamma", best_svm.get_params().get("svm__regressor__gamma"))
         mlflow.log_param(
             "epsilon", best_svm.get_params().get("svm__regressor__epsilon")
         )
@@ -677,19 +651,19 @@ def _build_rf(
     refit: str,
     transform_target: bool,
 ) -> object:
-    """ Trains, cross-validates and tunes a SVM algorithm.
+    """Trains, cross-validates and tunes a SVM algorithm.
 
-        Args:
-            X_train: features training values.
-            y_trai: target traning values.
-            n_splits: number of splits for CV.
-            k_bests: list with the k bests feature to use in feature selection
-            scoring: dictionary with the scores for CV multiscoring.
-            refit: the metric used to fit data in CV.
-            transform_target: whether to transform or not the target.
+    Args:
+        X_train: features training values.
+        y_trai: target traning values.
+        n_splits: number of splits for CV.
+        k_bests: list with the k bests feature to use in feature selection
+        scoring: dictionary with the scores for CV multiscoring.
+        refit: the metric used to fit data in CV.
+        transform_target: whether to transform or not the target.
 
-        Returns:
-            An Grid Search CV scikit learn object.
+    Returns:
+        An Grid Search CV scikit learn object.
 
     """
     ctx = context.load_context("../wind-power-forecasting")
@@ -704,8 +678,7 @@ def _build_rf(
     if transform_target:
         rf = TransformedTargetRegressor(
             regressor=RandomForestRegressor(bootstrap=True, random_state=42),
-            transformer=PowerTransformer(
-                method="yeo-johnson", standardize=True),
+            transformer=PowerTransformer(method="yeo-johnson", standardize=True),
             check_inverse=False,
         )
         pipeline = Pipeline([("univariate_sel", selec_k_best), ("rf", rf)])
@@ -784,13 +757,8 @@ def _test_best_rf(
 
     predictions = best_rf.predict(X_test)
 
-    # build prediction matrix (ID,Production)
-    pred_matrix = np.stack(
-        (np.array(y_test.index.to_series()).astype(int), predictions), axis=-1
-    )
-    df_pred = pd.DataFrame(
-        data=pred_matrix.reshape(-1, 2), columns=["ID", "Production"]
-    )
+    # fix negative values in target predictions
+    predictions[predictions < 0] = 0.0
 
     # get metrics
     (rmse, mae, r2, cape) = _eval_metrics(y_test, predictions)
@@ -806,8 +774,7 @@ def _test_best_rf(
 
     # pre-processing
     mlflow.log_param("selected_features", selected_feat)
-    mlflow.log_param("k_best_features",
-                     best_rf.get_params().get("univariate_sel__k"))
+    mlflow.log_param("k_best_features", best_rf.get_params().get("univariate_sel__k"))
 
     # grid search parameters
     if transform_target:
@@ -830,12 +797,9 @@ def _test_best_rf(
         )
 
     else:
-        mlflow.log_param(
-            "n_estimators", best_rf.get_params().get("rf__n_estimators"))
-        mlflow.log_param(
-            "max_features", best_rf.get_params().get("rf__max_features"))
-        mlflow.log_param(
-            "max_depth", best_rf.get_params().get("rf__max_depth"))
+        mlflow.log_param("n_estimators", best_rf.get_params().get("rf__n_estimators"))
+        mlflow.log_param("max_features", best_rf.get_params().get("rf__max_features"))
+        mlflow.log_param("max_depth", best_rf.get_params().get("rf__max_depth"))
         mlflow.log_param(
             "min_samples_split", best_rf.get_params().get("rf__min_samples_split")
         )
@@ -868,16 +832,16 @@ def _regression_plots(
     y_test: pd.Series,
     dest_folder: str,
 ) -> None:
-    """ Gets several regression related plots.
+    """Gets several regression related plots.
 
-        Args:
-            wf: the Wind Farm.
-            model: the model to explore.
-            Train and test data sets.
+    Args:
+        wf: the Wind Farm.
+        model: the model to explore.
+        Train and test data sets.
 
-        Returns:
-            None, plots show up and are saved 
-            in data/08_reporting/figures.
+    Returns:
+        None, plots show up and are saved
+        in data/08_reporting/figures.
 
     """
     # Get model from received pipeline object
@@ -909,19 +873,19 @@ def _validation_plots(
     dest_folder: str,
     transform_target: bool,
 ) -> None:
-    """ Gets several plots for model validation.
+    """Gets several plots for model validation.
 
-        Args:
-            wf: the Wind Farm.
-            alg: the algorithm used to create the model.
-            model: the model to explore.
-            Train and test data sets.
-            scorer, f.i., cape_scorer from create_model node.
-            transform_target: whether the target is power-transformed or not.
+    Args:
+        wf: the Wind Farm.
+        alg: the algorithm used to create the model.
+        model: the model to explore.
+        Train and test data sets.
+        scorer, f.i., cape_scorer from create_model node.
+        transform_target: whether the target is power-transformed or not.
 
-        Returns:
-            None, plots show up and are saved 
-            in data/08_reporting/figures.
+    Returns:
+        None, plots show up and are saved
+        in data/08_reporting/figures.
 
     """
     model = model.get_params().get(alg.lower())
@@ -972,7 +936,11 @@ def _validation_plots(
     viz.show(clear_figure=True)
 
     # Learning curves
-    visualizer = LearningCurve(model, scoring=scorer, title=alg,)
+    visualizer = LearningCurve(
+        model,
+        scoring=scorer,
+        title=alg,
+    )
     visualizer.fit(X_train, y_train)
     visualizer.show(outpath=dest_folder + "learning_curves.png")
     visualizer.show(clear_figure=True)
@@ -989,7 +957,7 @@ def _validation_plots(
     visualizer.show(clear_figure=True)
 
 
-def _time_series_plots(wf, predictions):
+def _time_series_plots(wf, predictions, dest_folder):
     ctx = context.load_context("../wind-power-forecasting/")
 
     # Load data and feature names for the selected WF
@@ -1018,15 +986,21 @@ def _time_series_plots(wf, predictions):
         y_test = ctx.catalog.load("y_test_WF6")
         y_test = y_test[0]
 
-    real_pred = np.concatenate(
-        (np.array(y_test), predictions)).reshape(len(y_test), 2)
-    df_real_pred = pd.DataFrame(
-        data=real_pred, index=X_test.Time, columns=["real", "estimado"],
+    y_test.rename("real", inplace=True)
+    predictions = pd.Series(predictions, name="estimado")
+
+    real_pred = pd.concat(
+        [pd.to_datetime(X_test.Time, format="%d/%m/%Y %H:%M"), y_test, predictions],
+        axis=1,
     )
 
-    df_real_pred.iplot(
-        kind="scatter", filename="cufflinks/cf-simple-line", yTitle="Producción (MW)",
+    fig = px.line(
+        data_frame=real_pred,
+        x="Time",
+        y=["real", "estimado"],
+        labels={"Time": "Fecha", "value": "Producción (MWh)"},
     )
+    fig.write_image(dest_folder + "ts_predictions.png")
 
 
 def _feature_selection_plots(
@@ -1059,24 +1033,24 @@ def create_model(
     scoring: Dict,
     refit: str,
 ) -> object:
-    """ Trains, validates and tunes the chosen algorithm (MARS, KNN, SVR, RF, ANN)
-        using CV and GridSearch.
+    """Trains, validates and tunes the chosen algorithm (MARS, KNN, SVR, RF, ANN)
+    using CV and GridSearch.
 
-        Args:
-            wf: The Wind Farm to model.
-            alg: The algorithm to create the model.
-            find_max_kbests: whether to add or not max_k_best in hyperparameter optimization.
-            max_k_best: Maximum number of k best features.
-            algorithm: The alrgorithm to train.
-            n_splits: Number of splits to use in cross validation.
-            hyperparams: Dictionary contaning the hyperparameters of the algorithm.
-            transform_target: Whether to apply or not a target transformation.
-            scoring: Dictionary with the list of scores to use in CV.
-            refit: The socre to use when refitting with the best params of CV.
+    Args:
+        wf: The Wind Farm to model.
+        alg: The algorithm to create the model.
+        find_max_kbests: whether to add or not max_k_best in hyperparameter optimization.
+        max_k_best: Maximum number of k best features.
+        algorithm: The alrgorithm to train.
+        n_splits: Number of splits to use in cross validation.
+        hyperparams: Dictionary contaning the hyperparameters of the algorithm.
+        transform_target: Whether to apply or not a target transformation.
+        scoring: Dictionary with the list of scores to use in CV.
+        refit: The socre to use when refitting with the best params of CV.
 
-        Returns:
-            A sklearn GridSearchCV object with all the relevant parameters for
-            the creation of the model.
+    Returns:
+        A sklearn GridSearchCV object with all the relevant parameters for
+        the creation of the model.
 
     """
 
@@ -1148,18 +1122,18 @@ def test_model(
     output_folder: str,
     transform_target: bool,
 ) -> object:
-    """ Re-trains the model on full X_train data set used in GridSearchCV
-        with the best hyperparameters and tests it on X_test.
+    """Re-trains the model on full X_train data set used in GridSearchCV
+    with the best hyperparameters and tests it on X_test.
 
-            Args:
-                gcv: GridSearchObject with the results of the CV + tunning.
-                X_train: The training set
-                y_train: The target traning values.
+        Args:
+            gcv: GridSearchObject with the results of the CV + tunning.
+            X_train: The training set
+            y_train: The target traning values.
 
-            Returns:
-                The model re-trained ready to predict on new unseen data.
-                Train and test data sets.
-                The Wind Farm identification.
+        Returns:
+            The model re-trained ready to predict on new unseen data.
+            Train and test data sets.
+            The Wind Farm identification.
 
     """
 
@@ -1236,10 +1210,10 @@ def get_model_plots(
     scorer: object,
     folder: str,
 ) -> None:
-    """ Several plots related to model analysis.
-        - Regression related plots
-        - Learning and validation plots.
-        - Feature extraction plots.
+    """Several plots related to model analysis.
+    - Regression related plots
+    - Learning and validation plots.
+    - Feature extraction plots.
     """
     ctx = context.load_context("../wind-power-forecasting")
     transform_target = ctx.params.get("transform_target")
@@ -1249,11 +1223,18 @@ def get_model_plots(
     y_test = data[3]
 
     # Create destination folder
-    os.makedirs(folder + "figures/" + wf + "/" + alg + "/", exist_ok=True)
-    dest_folder = folder + "figures/" + wf + "/" + alg + "/"
+    os.makedirs(folder + "figures/" + wf + "/", exist_ok=True)
+    dest_folder = folder + "figures/" + wf + "/"
 
     _regression_plots(
-        wf, alg, model, X_train_2, y_train, X_test_2, y_test, dest_folder,
+        wf,
+        alg,
+        model,
+        X_train_2,
+        y_train,
+        X_test_2,
+        y_test,
+        dest_folder,
     )
     _validation_plots(
         wf,
@@ -1267,9 +1248,7 @@ def get_model_plots(
         transform_target,
     )
 
-    _time_series_plots(wf, predictions)
+    _time_series_plots(wf, predictions, dest_folder)
 
-    # Only applies for stimators with feature_importance parameter
-    # _feature_selection_plots(
-    #    wf, alg, model, X_train, y_train, n_splits, scorer, dest_folder,
-    # )
+    # Log artifacts with MLflow
+    mlflow.log_artifacts(dest_folder)

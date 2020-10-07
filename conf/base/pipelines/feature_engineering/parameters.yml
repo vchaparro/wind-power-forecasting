@@ -1,5 +1,5 @@
 k_best: "all"
 add_time_feat: True
 add_cycl_feat: True
-add_inv_T: True
+add_inv_T: False
 add_interactions: True
