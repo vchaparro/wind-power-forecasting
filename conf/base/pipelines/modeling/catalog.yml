@@ -98,24 +98,195 @@ feature_names_WF6:
 
 MARS_WF1:
   type: pickle.PickleDataSet
-  filepath: data/06_models/WF1/mars.pickle
+  filepath: data/06_models/WF1/MARS.pickle
 
 MARS_WF2:
   type: pickle.PickleDataSet
-  filepath: data/06_models/WF2/mars.pickle
+  filepath: data/06_models/WF2/MARS.pickle
 
 MARS_WF3:
   type: pickle.PickleDataSet
-  filepath: data/06_models/WF3/mars.pickle
+  filepath: data/06_models/WF3/MARS.pickle
 
 MARS_WF4:
   type: pickle.PickleDataSet
-  filepath: data/06_models/WF4/mars.pickle
+  filepath: data/06_models/WF4/MARS.pickle
 
 MARS_WF5:
   type: pickle.PickleDataSet
-  filepath: data/06_models/WF5/mars.pickle
+  filepath: data/06_models/WF5/MARS.pickle
 
 MARS_WF6:
   type: pickle.PickleDataSet
-  filepath: data/06_models/WF6/mars.pickle
+  filepath: data/06_models/WF6/MARS.pickle
+
+KNN_WF1:
+  type: pickle.PickleDataSet
+  filepath: data/06_models/WF1/KNN.pickle
+
+KNN_WF2:
+  type: pickle.PickleDataSet
+  filepath: data/06_models/WF2/KNN.pickle
+
+KNN_WF3:
+  type: pickle.PickleDataSet
+  filepath: data/06_models/WF3/KNN.pickle
+
+KNN_WF4:
+  type: pickle.PickleDataSet
+  filepath: data/06_models/WF4/KNN.pickle
+
+KNN_WF5:
+  type: pickle.PickleDataSet
+  filepath: data/06_models/WF5/KNN.pickle
+
+KNN_WF6:
+  type: pickle.PickleDataSet
+  filepath: data/06_models/WF6/KNN.pickle
+
+RF_WF1:
+  type: pickle.PickleDataSet
+  filepath: data/06_models/WF1/RF.pickle
+
+RF_WF2:
+  type: pickle.PickleDataSet
+  filepath: data/06_models/WF2/RF.pickle
+
+RF_WF3:
+  type: pickle.PickleDataSet
+  filepath: data/06_models/WF3/RF.pickle
+
+RF_WF4:
+  type: pickle.PickleDataSet
+  filepath: data/06_models/WF4/RF.pickle
+
+RF_WF5:
+  type: pickle.PickleDataSet
+  filepath: data/06_models/WF5/RF.pickle
+
+RF_WF6:
+  type: pickle.PickleDataSet
+  filepath: data/06_models/WF6/RF.pickle
+
+SVM_WF1:
+  type: pickle.PickleDataSet
+  filepath: data/06_models/WF1/SVM.pickle
+
+SVM_WF2:
+  type: pickle.PickleDataSet
+  filepath: data/06_models/WF2/SVM.pickle
+
+SVM_WF3:
+  type: pickle.PickleDataSet
+  filepath: data/06_models/WF3/SVM.pickle
+
+SVM_WF4:
+  type: pickle.PickleDataSet
+  filepath: data/06_models/WF4/SVM.pickle
+
+SVM_WF5:
+  type: pickle.PickleDataSet
+  filepath: data/06_models/WF5/SVM.pickle
+
+SVM_WF6:
+  type: pickle.PickleDataSet
+  filepath: data/06_models/WF6/SVM.pickle
+
+# Predictions
+pred_mars_WF1:
+  type: pickle.PickleDataSet
+  filepath: data/07_model_output/WF1/MARS_predictions.pickle
+    
+pred_knn_WF1:
+  type: pickle.PickleDataSet
+  filepath: data/07_model_output/WF1/KNN_predictions.pickle
+  
+pred_svm_WF1:
+  type: pickle.PickleDataSet
+  filepath: data/07_model_output/WF1/SVM_predictions.pickle
+  
+pred_rf_WF1:
+  type: pickle.PickleDataSet
+  filepath: data/07_model_output/WF1/RF_predictions.pickle
+
+pred_mars_WF2:
+  type: pickle.PickleDataSet
+  filepath: data/07_model_output/WF2/MARS_predictions.pickle
+    
+pred_knn_WF2:
+  type: pickle.PickleDataSet
+  filepath: data/07_model_output/WF2/KNN_predictions.pickle
+  
+pred_svm_WF2:
+  type: pickle.PickleDataSet
+  filepath: data/07_model_output/WF2/SVM_predictions.pickle
+  
+pred_rf_WF2:
+  type: pickle.PickleDataSet
+  filepath: data/07_model_output/WF2/RF_predictions.pickle
+
+pred_mars_WF3:
+  type: pickle.PickleDataSet
+  filepath: data/07_model_output/WF3/MARS_predictions.pickle
+    
+pred_knn_WF3:
+  type: pickle.PickleDataSet
+  filepath: data/07_model_output/WF3/KNN_predictions.pickle
+  
+pred_svm_WF3:
+  type: pickle.PickleDataSet
+  filepath: data/07_model_output/WF3/SVM_predictions.pickle
+  
+pred_rf_WF3:
+  type: pickle.PickleDataSet
+  filepath: data/07_model_output/WF3/RF_predictions.pickle
+
+pred_mars_WF4:
+  type: pickle.PickleDataSet
+  filepath: data/07_model_output/WF4/MARS_predictions.pickle
+    
+pred_knn_WF4:
+  type: pickle.PickleDataSet
+  filepath: data/07_model_output/WF4/KNN_predictions.pickle
+  
+pred_svm_WF4:
+  type: pickle.PickleDataSet
+  filepath: data/07_model_output/WF4/SVM_predictions.pickle
+  
+pred_rf_WF4:
+  type: pickle.PickleDataSet
+  filepath: data/07_model_output/WF4/RF_predictions.pickle
+
+pred_mars_WF5:
+  type: pickle.PickleDataSet
+  filepath: data/07_model_output/WF5/MARS_predictions.pickle
+    
+pred_knn_WF5:
+  type: pickle.PickleDataSet
+  filepath: data/07_model_output/WF5/KNN_predictions.pickle
+  
+pred_svm_WF5:
+  type: pickle.PickleDataSet
+  filepath: data/07_model_output/WF5/SVM_predictions.pickle
+  
+pred_rf_WF5:
+  type: pickle.PickleDataSet
+  filepath: data/07_model_output/WF5/RF_predictions.pickle
+
+pred_mars_WF6:
+  type: pickle.PickleDataSet
+  filepath: data/07_model_output/WF6/MARS_predictions.pickle
+    
+pred_knn_WF6:
+  type: pickle.PickleDataSet
+  filepath: data/07_model_output/WF6/KNN_predictions.pickle
+  
+pred_svm_WF6:
+  type: pickle.PickleDataSet
+  filepath: data/07_model_output/WF6/SVM_predictions.pickle
+  
+pred_rf_WF6:
+  type: pickle.PickleDataSet
+  filepath: data/07_model_output/WF6/RF_predictions.pickle
+
+

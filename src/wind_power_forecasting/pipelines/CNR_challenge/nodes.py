@@ -35,10 +35,7 @@ from wind_power_forecasting.pipelines.data_engineering.nodes import (
 
 
 def get_data_by_wf(
-    wf: str,
-    X_train: pd.DataFrame,
-    X_test: pd.DataFrame,
-    y_train: pd.Series,
+    wf: str, X_train: pd.DataFrame, X_test: pd.DataFrame, y_train: pd.Series,
 ) -> pd.DataFrame:
     """Get data filterd by Wind Farm (wf).
 
@@ -201,14 +198,14 @@ def select_best_NWP_features(
     X_train = X_train[["ID", "Time", "U", "V", "T", "CLCT"]]
     X_test = X_test[["ID", "Time", "U", "V", "T", "CLCT"]]"""
 
-    X_train["U"] = X_train.NWP2_U
+    X_train["U"] = X_train.NWP1_U
     X_train["V"] = X_train.NWP1_V
-    X_train["T"] = X_train.NWP3_T
+    X_train["T"] = X_train.NWP1_T
     X_train["CLCT"] = X_train.NWP4_CLCT
 
-    X_test["U"] = X_test.NWP2_U
+    X_test["U"] = X_test.NWP1_U
     X_test["V"] = X_test.NWP1_V
-    X_test["T"] = X_test.NWP3_T
+    X_test["T"] = X_test.NWP1_T
     X_test["CLCT"] = X_test.NWP4_CLCT
 
     # Select final features
@@ -216,6 +213,41 @@ def select_best_NWP_features(
     X_test = X_test[["ID", "Time", "U", "V", "T", "CLCT"]]
 
     return X_train, X_test
+
+
+def clean_outliers(X: pd.DataFrame, y: pd.Series, wf: str, *args) -> tuple:
+    """It removes the outliers and returned cleaned X, y.
+
+    Args:
+        X: the feature data frame.
+        y: the target.
+
+    Returns:
+        Cleaned X, y.
+
+    """
+
+    # Find outliers
+    outliers = _find_outliers(X, y, wf, *args)
+
+    # Power curve data
+    X["Production"] = y.to_list()
+    X["wspeed"] = X.apply(_get_wind_speed, axis=1)
+    X_ = X[["wspeed", "Production"]]
+
+    # Remove outliers
+    for value in outliers.values():
+        X_.wspeed = X_.wspeed[(~value)]
+        X_.Production = X_.Production[(~value)]
+
+    # select no-outliers observations
+    X_cleaned = X.loc[X["wspeed"].isin(X_.wspeed)]
+    y_cleaned = X_cleaned["Production"]
+
+    del X["Production"], X["wspeed"], X_
+    del X_cleaned["wspeed"], X_cleaned["Production"]
+
+    return X_cleaned, y_cleaned
 
 
 def fix_negative_values(
@@ -242,11 +274,7 @@ def fix_negative_values(
     return processed_data
 
 
-def export_data(
-    folder: str,
-    WF: str,
-    df_dict: Dict,
-) -> None:
+def export_data(folder: str, WF: str, df_dict: Dict,) -> None:
     """Export data frames to csv.
 
     Args:
@@ -444,10 +472,7 @@ def predict(wf: str, model: object, output_folder: str, alg: str) -> np.ndarray:
             output_folder + "submission_{}.csv".format(alg), index=False, sep=","
         )
     else:
-        submission_df = submission_df.append(
-            df_pred,
-            ignore_index=True,
-        )
+        submission_df = submission_df.append(df_pred, ignore_index=True,)
         submission_df.to_csv(
             output_folder + "submission_{}.csv".format(alg),
             index=False,

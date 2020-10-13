@@ -15,7 +15,11 @@ def create_pipeline(**kwargs):
                     "params:add_inv_T",
                     "params:add_interactions",
                 ],
-                outputs=["X_train_pped", "X_test_pped", "feature_names",],
+                outputs=[
+                    "X_train_pped",
+                    "X_test_pped",
+                    "feature_names",
+                ],
                 name="feature_engineering",
             ),
             node(

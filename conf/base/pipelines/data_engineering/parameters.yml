@@ -28,7 +28,9 @@ cols_to_interpol:
 fig_id: "outliers"
 
 # The date from we want to split the X and y data sets into train/test sets.
-split_date: "2018-11-13 23:00:00"
+# split_date: "2019-01-14 23:00:00"  # day
+# split_date: "2019-01-08 23:00:00" # week
+split_date: "2018-12-14 23:00:00" # month
 
 # Outliers detection parameters
 WF1:

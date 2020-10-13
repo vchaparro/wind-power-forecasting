@@ -17,7 +17,13 @@ def create_pipeline(**kwargs):
                     "params:scoring",
                     "params:refit",
                 ],
-                outputs=["wf", "alg", "best_model", "X_train", "y_train",],
+                outputs=[
+                    "wf",
+                    "alg",
+                    "best_model",
+                    "X_train",
+                    "y_train",
+                ],
                 name="create_model",
             ),
             node(
@@ -31,7 +37,12 @@ def create_pipeline(**kwargs):
                     "params:folder.mdl",
                     "params:transform_target",
                 ],
-                outputs=["model", "X_train_2", "X_test_2", "predictions",],
+                outputs=[
+                    "model",
+                    "X_train_2",
+                    "X_test_2",
+                    "predictions",
+                ],
                 name="test_model",
             ),
             node(
@@ -53,4 +64,3 @@ def create_pipeline(**kwargs):
         ],
         tags="modeling",
     )
-

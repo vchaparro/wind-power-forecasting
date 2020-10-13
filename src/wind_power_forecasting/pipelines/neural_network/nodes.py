@@ -26,10 +26,11 @@ from sklearn.compose import ColumnTransformer, TransformedTargetRegressor
 from sklearn.pipeline import Pipeline
 import mlflow
 import mlflow.sklearn
+import mlflow.keras
 from mlflow import log_metric, log_param, log_artifact
 from sklearn.preprocessing import PowerTransformer
 from sklearn.feature_selection import SelectFromModel
-from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
 from sklearn.feature_selection import SelectKBest, mutual_info_regression
 from sklearn.metrics.scorer import make_scorer
 from sklearn.model_selection import TimeSeriesSplit
@@ -45,7 +46,7 @@ import plotly
 import cufflinks as cf
 
 
-class KerasClf(
+class KerasReg(
     BaseEstimator, RegressorMixin, keras.wrappers.scikit_learn.KerasRegressor
 ):
     def __init__(self, build_fn, **kwargs):
@@ -66,9 +67,7 @@ def _build_ann(n_hidden=1, n_neurons=30, learning_rate=3e-3, input_shape=[2]):
     ann.add(tf.keras.layers.Dense(1))
     optimizer = tf.keras.optimizers.SGD(lr=learning_rate)
     ann.compile(
-        loss="mse",
-        optimizer=optimizer,
-        metrics=[tf.keras.metrics.MeanAbsoluteError()],
+        loss="mse", optimizer=optimizer, metrics=[tf.keras.metrics.MeanAbsoluteError()],
     )
 
     return ann
@@ -139,7 +138,7 @@ def _regression_plots(
 
         return model
 
-    kf = KerasClf(build_model, epochs=100, batch_size=3)
+    kf = KerasReg(build_model, epochs=100, batch_size=3)
 
     # Residuals plot
     visualizer = ResidualsPlot(kf, title=alg)
@@ -258,6 +257,9 @@ def train_test_ann(
 
     selec_k_best = SelectKBest(mutual_info_regression, k=1)
 
+    max_n_neurons = ctx.params.get("ann_hypms").get("max_n_neurons")
+    n_neurons = list(range(1, max_n_neurons + 1, 5))
+
     if transform_target:
         nn = keras.wrappers.scikit_learn.KerasRegressor(
             _build_ann, epochs=100, batch_size=3
@@ -271,7 +273,7 @@ def train_test_ann(
         pipeline = Pipeline([("univariate_sel", selec_k_best), ("ann", ann)])
         param_grid = {
             "ann__regressor__n_hidden": ctx.params.get("ann_hypms").get("n_hidden"),
-            "ann__regressor__n_neurons": ctx.params.get("ann_hypms").get("n_neurons"),
+            "ann__regressor__n_neurons": n_neurons,
             "ann__regressor__learning_rate": ctx.params.get("ann_hypms").get(
                 "learning_rate"
             ),
@@ -285,7 +287,7 @@ def train_test_ann(
         pipeline = Pipeline([("univariate_sel", selec_k_best), ("ann", ann)])
         param_grid = {
             "ann__n_hidden": ctx.params.get("ann_hypms").get("n_hidden"),
-            "ann__n_neurons": ctx.params.get("ann_hypms").get("n_neurons"),
+            "ann__n_neurons": [83],
             "ann__learning_rate": ctx.params.get("ann_hypms").get("learning_rate"),
             "ann__input_shape": [max_k_bests],
             "univariate_sel__k": k_bests,
@@ -301,13 +303,7 @@ def train_test_ann(
     tscv = TimeSeriesSplit(n_splits)
 
     grid_search = GridSearchCV(
-        pipeline,
-        param_grid,
-        cv=tscv,
-        n_jobs=-1,
-        verbose=100,
-        scoring=scoring,
-        refit=refit,
+        pipeline, param_grid, cv=tscv, n_jobs=-1, scoring=scoring, refit=refit,
     )
 
     grid_search.fit(X_train, y_train.to_numpy())
@@ -389,7 +385,11 @@ def train_test_ann(
     mlflow.log_metric("cape", cape)
 
     # artifacts
-    # mlflow.sklearn.log_model(best_ann, "ANN")
+    # mlflow.keras.log_model(
+    #    best_ann.named_steps.get("ann"),
+    #    output_folder + "{0}/{1}".format(wf, "ANN"),
+    #    keras_module=tf.keras,
+    # )
 
     # save model
     best_ann.named_steps.get("ann").model.save(
@@ -412,7 +412,6 @@ def get_nn_plots(
     """Several plots related to model analysis.
     - Regression related plots
     - Learning and validation plots.
-    - Feature extraction plots.
     """
     ctx = context.load_context("../wind-power-forecasting")
     data = _get_data_by_WF(wf)
@@ -425,24 +424,12 @@ def get_nn_plots(
     dest_folder = folder + "figures/" + wf + "/" + alg + "/"
 
     _validation_plots(
-        wf,
-        alg,
-        X_train_2_nn,
-        y_train,
-        n_splits,
-        scorer,
-        dest_folder,
-        transform_target,
+        wf, alg, X_train_2_nn, y_train, n_splits, scorer, dest_folder, transform_target,
     )
 
     _regression_plots(
-        wf,
-        alg,
-        X_train_2_nn,
-        y_train,
-        X_test_2_nn,
-        y_test,
-        dest_folder,
+        wf, alg, X_train_2_nn, y_train, X_test_2_nn, y_test, dest_folder,
     )
 
-    _time_series_plots(wf, predictions_nn)
+    _time_series_plots(wf, predictions_nn, dest_folder)
+    mlflow.log_artifacts(dest_folder)

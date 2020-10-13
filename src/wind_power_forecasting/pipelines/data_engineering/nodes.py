@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 from operational_analysis.toolkits import filters
 from operational_analysis.toolkits import power_curve
 from kedro.framework import context
+import mlflow
 
 
 def log_running_time(func: Callable) -> Callable:
@@ -57,11 +58,7 @@ def _get_wind_speed(x: pd.DataFrame) -> float:
 
 
 def _save_fig(
-    fig_id: int,
-    folder: str,
-    tight_layout=True,
-    fig_extension="png",
-    resolution=300,
+    fig_id: int, folder: str, tight_layout=True, fig_extension="png", resolution=300,
 ):
     os.makedirs(folder, exist_ok=True)
     path = os.path.join(folder, fig_id + "." + fig_extension)
@@ -70,6 +67,7 @@ def _save_fig(
         plt.tight_layout()
 
     plt.savefig(path, format=fig_extension, dpi=resolution)
+    mlflow.log_artifacts(folder)
 
 
 def _plot_flagged_pc(ws, p, flag_bool, alpha):
@@ -80,7 +78,7 @@ def _plot_flagged_pc(ws, p, flag_bool, alpha):
     # plt.show()
 
 
-def get_data_by_wf(X: pd.DataFrame, wf: str, y: pd.Series) -> pd.DataFrame:
+def get_data_by_wf(X: pd.DataFrame, y: pd.Series, wf: str) -> pd.DataFrame:
     """Get data filterd by Wind Farm (wf).
 
     Args:
@@ -96,33 +94,66 @@ def get_data_by_wf(X: pd.DataFrame, wf: str, y: pd.Series) -> pd.DataFrame:
     X = X[X["WF"] == wf]
     X["Time"] = pd.to_datetime(X["Time"], format="%d/%m/%Y %H:%M")
 
-    # Save observations identification
-    ID_X = X["ID"]
-
-    # selecting rows of y_train and y_test
-    y = y["Production"]
-    y = y.loc[ID_X.values - 1]
+    X = pd.merge(X, y, on="ID", how="inner")
+    y = X["Production"]
+    del X["Production"]
 
     return X, y
 
 
-def add_new_cols(new_cols: list, X: pd.DataFrame) -> pd.DataFrame:
+def split_data_by_date(date: str, X: pd.DataFrame, y: pd.Series) -> Dict:
+    """It splits X and y sets by a 'Time' value  into sets for training and testing.
+
+    Args:
+        X: cleaned X_train features data frame.
+        y: cleaned y_train target dta frame.
+
+    Returns:
+        A dictionary with the four sets (X_train, y_train, X_test, y_test).
+    """
+    sets = {}
+    date_cut = dt.datetime.strptime(date, "%Y-%m-%d %H:%M:%S")
+
+    X_test = X[X["Time"] > date_cut]
+    X_train = X[X["Time"] <= date_cut]
+    y_train = y[X_train.index]
+    y_test = y[X_test.index]
+
+    sets["X_train"] = X_train
+    sets["X_test"] = X_test
+    sets["y_train"] = y_train
+    sets["y_test"] = y_test
+
+    sets["y_train"].name = None
+    sets["y_test"].name = None
+
+    return sets
+
+
+def add_new_cols(new_cols: list, data_sets: Dict) -> pd.DataFrame:
     """Adds new columns to a given data frame.
 
     Args:
-        new_cols: List with the column names to be added.
-        X: data frame that will be expanded with new_cols.
+        new_cols: list with the column names to be added.
+        X_train: train data set to be expanded with new_cols.
+        X_train: test data set to be expanded with new_cols.
 
     Returns:
-        X expanded with the new columns and the columns that
+        X_train and X_test expanded with the new columns and the columns that
         contains missing values.
 
     """
-    cols = X.columns[3:]
-    for col in new_cols:
-        X[col] = np.nan
+    X_train = data_sets.get("X_train")
+    X_test = data_sets.get("X_test")
 
-    return X, cols
+    # For predictions only can be used data avialable on day D at 09h. --> columns 3 to -9
+    X_test = X_test[X_test.columns[0:-9]]
+
+    for col in new_cols:
+        X_train[col] = np.nan
+        X_test[col] = np.nan
+
+    return X_train, X_test
 
 
 def _interpolate_missing_values(X: pd.DataFrame, cols: List) -> pd.DataFrame:
@@ -150,15 +181,12 @@ def _interpolate_missing_values(X: pd.DataFrame, cols: List) -> pd.DataFrame:
 
 
 @log_running_time
-def input_missing_values(
-    X: pd.DataFrame, cols: List, cols_to_interpol: List
-) -> pd.DataFrame:
+def _daily_missing_values(X: pd.DataFrame, cols: List) -> pd.DataFrame:
     """Impute missing values based on the gap time between forecasted timestamp and NWP run.
 
     Args:
         X: the data frame where the missing will be inputed.
         cols: columns with missig values due to daily frequency of NWP.
-        cols_to_interpol: columns with missing values due to hourly frequency of NWP.
 
     Returns:
         X: the data frame with inputed missing values.
@@ -194,13 +222,39 @@ def input_missing_values(
                         X[col_name]
                     )
 
-    # Interpolate missing values when required.
-    _interpolate_missing_values(X, cols_to_interpol)
-
     return X
 
 
-def select_best_NWP_features(X: pd.DataFrame) -> pd.DataFrame:
+def input_missing_values(X_train: pd.DataFrame, X_test: pd.DataFrame) -> tuple:
+    """ Inputs the missing values in both training and test sets.
+
+            Args:
+                X_train/X_test data.
+                
+            
+            Returns:
+                X_train/test with filled in missing values.
+    """
+
+    ctx = context.load_context("../wind-power-forecasting")
+    cols_to_interpol = ctx.params.get("cols_to_interpol")
+    X_train_raw = ctx.catalog.load("X_train_raw")
+    cols_train = X_train_raw.columns[3:]
+    cols_test = X_train_raw.columns[3:-9]
+
+    X_train_no_missings = _daily_missing_values(X_train, cols_train)
+    X_test_no_missings = _daily_missing_values(X_test, cols_test)
+    X_train_no_missings = _interpolate_missing_values(
+        X_train_no_missings, cols_to_interpol
+    )
+    X_test_no_missings = _interpolate_missing_values(X_test, cols_to_interpol)
+
+    return X_train_no_missings, X_test_no_missings
+
+
+def select_best_NWP_features(
+    X_train: pd.DataFrame, X_test: pd.DataFrame
+) -> pd.DataFrame:
     """Select the features of the best NWP.
 
     Args:
@@ -211,15 +265,21 @@ def select_best_NWP_features(X: pd.DataFrame) -> pd.DataFrame:
 
     """
     # Select the best NWP predictions for weather predictors
-    X["U"] = X.NWP2_U
-    X["V"] = X.NWP1_V
-    X["T"] = X.NWP3_T
-    X["CLCT"] = X.NWP4_CLCT
+    X_train["U"] = (X_train.NWP1_U + X_train.NWP2_U + X_train.NWP3_U) / 3
+    X_train["V"] = (X_train.NWP1_V + X_train.NWP2_V + X_train.NWP3_V) / 3
+    X_train["T"] = (X_train.NWP1_T + X_train.NWP3_T) / 2
+    X_train["CLCT"] = X_train.NWP4_CLCT
+
+    X_test["U"] = (X_test.NWP1_U + X_test.NWP2_U + X_test.NWP3_U) / 3
+    X_test["V"] = (X_test.NWP1_V + X_test.NWP2_V + X_test.NWP3_V) / 3
+    X_test["T"] = (X_test.NWP1_T + X_test.NWP3_T) / 2
+    X_test["CLCT"] = X_test.NWP4_CLCT
 
     # Select final features
-    X = X[["ID", "Time", "U", "V", "T", "CLCT"]]
+    X_train = X_train[["ID", "Time", "U", "V", "T", "CLCT"]]
+    X_test = X_test[["ID", "Time", "U", "V", "T", "CLCT"]]
 
-    return X
+    return X_train, X_test
 
 
 def _find_outliers(X: pd.DataFrame, y: pd.Series, wf: str, *args) -> Dict[str, list]:
@@ -263,14 +323,14 @@ def _find_outliers(X: pd.DataFrame, y: pd.Series, wf: str, *args) -> Dict[str, l
     )
 
     # sparse outliers
-    max_bin = 0.97 * X_["Production"].max()
+    max_bin = 0.99 * X_["Production"].max()
     sparse = filters.bin_filter(
         X_.Production,
         X_.wspeed,
         sparse_bin_width,
         frac_std * X_.Production.std(),
         "median",
-        0.1,
+        0.025,
         max_bin,
         threshold_type,
         "all",
@@ -278,15 +338,12 @@ def _find_outliers(X: pd.DataFrame, y: pd.Series, wf: str, *args) -> Dict[str, l
 
     # bottom-curve stacked outliers
     bottom = filters.window_range_flag(
-        X_.wspeed, bottom_max, 40, X_.Production, 0.05, 2000.0
+        X_.wspeed, bottom_max, 40, X_.Production, 0.025, 2000.0
     )
 
     # Plot outliers
     _plot_flagged_pc(
-        X_.wspeed,
-        X_.Production,
-        (top) | (sparse) | (bottom),
-        0.3,
+        X_.wspeed, X_.Production, (top) | (sparse) | (bottom), 0.3,
     )
 
     if args:
@@ -295,8 +352,7 @@ def _find_outliers(X: pd.DataFrame, y: pd.Series, wf: str, *args) -> Dict[str, l
         fig_id = "outliers"
 
     _save_fig(
-        fig_id,
-        ctx.params.get("folder").get("rep") + "figures/" + wf + "/",
+        fig_id, ctx.params.get("folder").get("rep") + "figures/" + wf + "/",
     )
 
     plt.close()
@@ -312,7 +368,7 @@ def _find_outliers(X: pd.DataFrame, y: pd.Series, wf: str, *args) -> Dict[str, l
 
 
 @log_running_time
-def clean_outliers(X: pd.DataFrame, y: pd.Series, wf: str, *args) -> tuple:
+def clean_outliers(X: pd.DataFrame, sets: Dict, wf: str, *args) -> tuple:
     """It removes the outliers and returned cleaned X, y.
 
     Args:
@@ -323,6 +379,8 @@ def clean_outliers(X: pd.DataFrame, y: pd.Series, wf: str, *args) -> tuple:
         Cleaned X, y.
 
     """
+    y = sets.get("y_train")
+
     # Find outliers
     outliers = _find_outliers(X, y, wf, *args)
 
@@ -346,70 +404,35 @@ def clean_outliers(X: pd.DataFrame, y: pd.Series, wf: str, *args) -> tuple:
     return X_cleaned, y_cleaned
 
 
-def fix_negative_values(X: pd.DataFrame) -> tuple:
+def fix_negative_values(X_train: pd.DataFrame, X_test: pd.DataFrame) -> tuple:
     """Replaces negative values of CLCT by 0.
 
     Args:
-        X: the data frame containing CLCT column.
+        X_train/test: the data frame containing CLCT column.
     Returns:
-        None, it replaces the values inplace.
+        The data sets with CLCT negative values fixed.
 
     """
-    X.loc[X["CLCT"] < 0, "CLCT"] = 0.0
+    X_train.loc[X_train["CLCT"] < 0, "CLCT"] = 0.0
+    X_test.loc[X_test["CLCT"] < 0, "CLCT"] = 0.0
 
-    return X
-
-
-def split_data_by_date(date: str, X: pd.DataFrame, y: pd.Series) -> Dict:
-    """It splits X and y sets by a 'Time' value  into sets for training and testing.
-
-    Args:
-        X: cleaned X_train features data frame.
-        y: cleaned y_train target dta frame.
-
-    Returns:
-        A dictionary with the four sets (X_train, y_train, X_test, y_test).
-    """
-    sets = {}
-    date_cut = dt.datetime.strptime(date, "%Y-%m-%d %H:%M:%S")
-
-    X_test = X[X["Time"] > date_cut]
-    X_train = X[X["Time"] <= date_cut]
-    y_train = y[X_train.index]
-    y_test = y[X_test.index]
-
-    sets["X_train"] = X_train
-    sets["X_test"] = X_test
-    sets["y_train"] = y_train
-    sets["y_test"] = y_test
-
-    sets["y_train"].name = None
-    sets["y_test"].name = None
-
-    return sets
+    return X_train, X_test
 
 
 @log_running_time
-def export_data(
-    folder: str,
-    WF: str,
-    df_dict: Dict,
-) -> None:
+def export_data(folder: str, WF: str, X_train, X_test, y_train, sets) -> None:
     """Export data frames to csv.
 
     Args:
         folder: the folder where the csv files will be saved.
         WF: Wind Farm identification.
-        df_dict: a dictionary with key, value pairs df name, df values.
+        X,y/train/test: data sets to be saved.
 
     Returns:
         None.
     """
     os.makedirs(folder + WF, exist_ok=True)
-    X_train = df_dict.get("X_train")
-    X_test = df_dict.get("X_test")
-    y_train = df_dict.get("y_train")
-    y_test = df_dict.get("y_test")
+    y_test = sets.get("y_test")
 
     X_train.to_csv(
         folder + "{}/{}.csv".format(WF, "X_train"),
@@ -427,9 +450,3 @@ def export_data(
     )
     y_test.to_csv(folder + "{}/{}.csv".format(WF, "y_test"), index=False, header=False)
 
-    """for key, value in df_dict.items():
-        value.to_csv(
-            folder + "{}/{}.csv".format(WF, key),
-            index=False,
-            date_format="%d/%m/%Y %H:%M",
-        )"""

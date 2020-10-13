@@ -1,21 +1,24 @@
-import pandas as pd
-from typing import List, Dict
-import logging
-import numpy as np
 import datetime as dt
+import logging
 import os
+import pickle
 import re
-from sklearn.base import BaseEstimator, TransformerMixin
-from scipy.constants import convert_temperature
+from collections import OrderedDict
+from typing import Dict, List
+
+import mlflow
+import numpy as np
+import pandas as pd
 from metpy import calc
 from metpy.units import units
-import pickle
+from scipy.constants import convert_temperature
+from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.compose import ColumnTransformer
 from sklearn.feature_selection import SelectKBest, mutual_info_regression
 from sklearn.pipeline import Pipeline
-from collections import OrderedDict
-from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import PowerTransformer
 from yellowbrick.target import FeatureCorrelation
+
 from wind_power_forecasting.nodes import utils
 
 
@@ -122,7 +125,7 @@ class NewFeaturesAdder(BaseEstimator, TransformerMixin):
     def fit(self, documents, y=None):
         return self
 
-    def transform(self, x_dataset):
+    def transform(self, x_dataset) -> pd.DataFrame:
 
         # Velocity derived features
         x_dataset["wspeed"] = x_dataset.apply(_get_wind_speed, axis=1)
@@ -262,6 +265,21 @@ def feature_engineering(
         add_interactions=add_interactions,
     )
 
+    ###  Save intermediate expanded sets to be used in EDA
+    X_train_expanded = feat_adder.fit_transform(X_train)
+    X_test_expanded = feat_adder.transform(X_test)
+
+    os.makedirs("./data/04_feature/" + wf, exist_ok=True)
+
+    with open(
+        "./data/04_feature/{}/X_train_expanded.pickle".format(wf), "wb"
+    ) as handle:
+        pickle.dump(X_train_expanded, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    with open("./data/04_feature/{}/X_test_expanded.pickle".format(wf), "wb") as handle:
+        pickle.dump(X_test_expanded, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    ##########
+
     drop_lst = []
     if feat_adder.get_params().get("add_cycl_feat"):
         if feat_adder.get_params().get("add_inv_T"):
@@ -278,15 +296,9 @@ def feature_engineering(
         remainder="passthrough", transformers=[("drop_columns", "drop", drop_lst)]
     )
 
+    # full pipeline to get preperaded data for ML
     feat_eng_pipeline = Pipeline(
-        steps=[
-            ("feature_adder", feat_adder),
-            ("pre_processing", pre_process),
-            (
-                "powertransformer",
-                PowerTransformer(method="yeo-johnson", standardize=True),
-            ),
-        ]
+        steps=[("feature_adder", feat_adder), ("pre_processing", pre_process),]
     )
 
     X_train_pped = feat_eng_pipeline.fit_transform(X_train)
@@ -394,7 +406,7 @@ def show_feature_importance(
     )
 
     visualizer.fit(X, y, random_state=0)
-    visualizer.show(
-        outpath=data_dst + "figures/" + wf + "/feature_importance.png",
-    )
-    visualizer.show(clear_figure=True)
+    visualizer.show(outpath=data_dst + "figures/" + wf + "/feature_importance.png",)
+    # visualizer.show(clear_figure=True)
+
+    mlflow.log_artifacts(data_dst + "figures/" + wf)

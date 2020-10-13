@@ -5,7 +5,7 @@
 # kedro-mlflow accepts relative path from the project root.
 # For instance, default `mlruns` will create a mlruns folder
 # at the root of the project
-mlflow_tracking_uri: --backend-store-uri sqlite:///mlflow.db
+mlflow_tracking_uri: mlruns
 
 # EXPERIMENT-RELATED PARAMETERS ----------
 
@@ -13,14 +13,14 @@ mlflow_tracking_uri: --backend-store-uri sqlite:///mlflow.db
 # where the runs are recorded). Change the name to
 # switch between different experiments
 experiment:
-  name: "WF1"
+  name: "Feature Selection"
   create: True # if the specified `name` does not exists, should it be created?
 
 # RUN-RELATED PARAMETERS -----------------
 
 run:
   id: null # if `id` is None, a new run will be created
-  name: ds_v3 # if `name` is None, pipeline name will be used for the run name
+  name: ds_v2 # if `name` is None, pipeline name will be used for the run name
   nested: True # # if `nested` is False, you won't be able to launch sub-runs inside your nodes
 
 # UI-RELATED PARAMETERS -----------------

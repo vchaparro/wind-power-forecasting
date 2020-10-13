@@ -8,7 +8,7 @@ from metpy import calc
 from metpy.units import units
 
 
-def get_wind_speed(x: pd.DataFrame) -> float:
+def _get_wind_speed(x: pd.DataFrame) -> float:
     """ Function to get wind speed from wind velocity components U and V.
     
         Args:
@@ -25,7 +25,7 @@ def get_wind_speed(x: pd.DataFrame) -> float:
     )
 
 
-def get_wind_dir(x: pd.DataFrame) -> float:
+def _get_wind_dir(x: pd.DataFrame) -> float:
     """ Function to get wind direction from wind velocity components U and V.
     
         Args:
@@ -46,21 +46,14 @@ def get_wind_dir(x: pd.DataFrame) -> float:
 
 
 # Enconding cyclic variables
-def encode_cyclic(data, col, max_val):
+def _encode_cyclic(data, col, max_val):
     data[col + "_sin"] = np.sin(2 * np.pi * data[col] / max_val)
     data[col + "_cos"] = np.cos(2 * np.pi * data[col] / max_val)
 
 
-# Enconding cyclic variables
-def encode_cyclic(data, col, max_val):
-    data[col + "_sin"] = np.sin(2 * np.pi * data[col] / max_val)
-    data[col + "_cos"] = np.cos(2 * np.pi * data[col] / max_val)
-
-
-# Class to add the new features
 class NewFeaturesAdder(BaseEstimator, TransformerMixin):
-    """ Scikit-learn custom transformer that allows to add new features 
-        derived from the original ones.
+    """Scikit-learn custom transformer that allows to add new features
+    derived from the original ones.
     """
 
     def __init__(
@@ -73,25 +66,16 @@ class NewFeaturesAdder(BaseEstimator, TransformerMixin):
         self.add_time_feat = add_time_feat
         self.add_cycl_feat = add_cycl_feat
         self.add_inv_T = add_inv_T
-        self.add_interactions
+        self.add_interactions = add_interactions
 
     def fit(self, documents, y=None):
         return self
 
-    def transform(self, x_dataset):
+    def transform(self, x_dataset) -> pd.DataFrame:
 
         # Velocity derived features
         x_dataset["wspeed"] = x_dataset.apply(_get_wind_speed, axis=1)
         x_dataset["wdir"] = x_dataset.apply(_get_wind_dir, axis=1)
-
-        if self.add_interactions:
-            x_dataset["wspeed_wdir"] = x_dataset["wspeed"] * x_dataset["wdir"]
-
-            if self.add_inv_T:
-                x_dataset["wspeed_invT"] = x_dataset["wspeed"] * x_dataset["inv_T"]
-                x_dataset["wspeed_wdir_invT"] = (
-                    x_dataset["wspeed"] * x_dataset["wdir"] * x_dataset["inv_T"]
-                )
 
         if self.add_time_feat:
             # Time derived features
@@ -113,6 +97,42 @@ class NewFeaturesAdder(BaseEstimator, TransformerMixin):
 
         if self.add_inv_T:
             x_dataset["inv_T"] = 1 / x_dataset["T"]
+
+        if self.add_interactions:
+            if not self.add_cycl_feat:
+                x_dataset["wspeed_wdir"] = x_dataset["wspeed"] * x_dataset["wdir"]
+                x_dataset["wspeed_T"] = x_dataset["wspeed"] * x_dataset["T"]
+                x_dataset["wspeed_wdir_T"] = (
+                    x_dataset["wspeed"] * x_dataset["wdir"] * x_dataset["T"]
+                )
+
+                if self.add_inv_T:
+                    x_dataset["wspeed_invT"] = x_dataset["wspeed"] * x_dataset["inv_T"]
+                    x_dataset["wspeed_wdir_invT"] = (
+                        x_dataset["wspeed"] * x_dataset["wdir"] * x_dataset["inv_T"]
+                    )
+            else:
+                x_dataset["wspeed_T"] = x_dataset["wspeed"] * x_dataset["T"]
+                x_dataset["wspeed_wdirsin"] = (
+                    x_dataset["wspeed"] * x_dataset["wdir_sin"]
+                )
+                x_dataset["wspeed_wdircos"] = (
+                    x_dataset["wspeed"] * x_dataset["wdir_cos"]
+                )
+                x_dataset["wspeed_wdirsin_T"] = (
+                    x_dataset["wspeed"] * x_dataset["wdir_sin"] * x_dataset["T"]
+                )
+                x_dataset["wspeed_wdircos_T"] = (
+                    x_dataset["wspeed"] * x_dataset["wdir_cos"] * x_dataset["T"]
+                )
+                if self.add_inv_T:
+                    x_dataset["wspeed_invT"] = x_dataset["wspeed"] * x_dataset["inv_T"]
+                    x_dataset["wspeed_wdirsin_invT"] = (
+                        x_dataset["wspeed"] * x_dataset["wdir_sin"] * x_dataset["inv_T"]
+                    )
+                    x_dataset["wspeed_wdircos_invT"] = (
+                        x_dataset["wspeed"] * x_dataset["wdir_cos"] * x_dataset["inv_T"]
+                    )
 
         return x_dataset
 

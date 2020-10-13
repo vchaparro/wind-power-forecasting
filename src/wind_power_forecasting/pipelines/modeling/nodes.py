@@ -33,7 +33,7 @@ from sklearn.metrics.scorer import make_scorer
 from sklearn.model_selection import GridSearchCV, TimeSeriesSplit
 from sklearn.neighbors import DistanceMetric, KNeighborsRegressor
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import PowerTransformer
+from sklearn.preprocessing import PowerTransformer, MinMaxScaler, StandardScaler
 from sklearn.svm import SVR
 from tensorflow import keras
 from yellowbrick.model_selection import RFECV, CVScores, LearningCurve, ValidationCurve
@@ -47,6 +47,29 @@ from wind_power_forecasting.pipelines.feature_engineering.nodes import (
 
 setattr(plotly.offline, "__PLOTLY_OFFLINE_INITIALIZED", True)
 cf.set_config_file(offline=True)
+
+# Cross validation strategy taken from
+# https://hub.packtpub.com/cross-validation-strategies-for-time-series-forecasting-tutorial/
+
+
+class BlockedTimeSeriesSplit:
+    def __init__(self, n_splits):
+        self.n_splits = n_splits
+
+    def get_n_splits(self, X, y, groups):
+        return self.n_splits
+
+    def split(self, X, y=None, groups=None):
+        n_samples = len(X)
+        k_fold_size = n_samples // self.n_splits
+        indices = np.arange(n_samples)
+
+        margin = 0
+        for i in range(self.n_splits):
+            start = i * k_fold_size
+            stop = start + k_fold_size
+            mid = int(0.8 * (stop - start)) + start
+            yield indices[start:mid], indices[mid + margin : stop]
 
 
 def _log_gcv_scores(gcv: object, scoring: Dict, alg: str) -> Dict:
@@ -140,22 +163,31 @@ def _get_data_by_WF(wf: str):
     return X_train, y_train, X_test, y_test, feature_names
 
 
-def _save_model(folder: str, model, wf: str, alg: str) -> None:
-    """Saves the trained model.
+def _save_model(folder: str, model, wf: str, alg: str, predictions: np.ndarray) -> None:
+    """Saves the trained model and predictions.
 
     Args:
         folder: the folder where the pickle objects will be saved.
         WF: Wind Farm identification.
         model: the model object.
         alg: the algorithm used to create the model.
+        predictions: predictions values got with the algorithm.
 
     Returns:
         None.
     """
+    ctx = context.load_context("../wind-power-forecasting")
+    pred_folder = ctx.params.get("folder").get("mout")
     os.makedirs(folder + wf, exist_ok=True)
+    os.makedirs(pred_folder + wf, exist_ok=True)
 
     with open(folder + "{0}/{1}.pickle".format(wf, alg), "wb") as handle:
         pickle.dump(model, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    with open(
+        pred_folder + "{0}/{1}_predictions.pickle".format(wf, alg), "wb"
+    ) as handle:
+        pickle.dump(predictions, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 def _build_mars(
@@ -202,6 +234,10 @@ def _build_mars(
         )
         pipeline = Pipeline(
             [
+                (
+                    "powertransformer",
+                    PowerTransformer(method="yeo-johnson", standardize=True),
+                ),
                 ("univariate_sel", selec_k_best),
                 ("mars", mars),
             ]
@@ -221,6 +257,10 @@ def _build_mars(
         mars = Earth(feature_importance_type="gcv")
         pipeline = Pipeline(
             [
+                (
+                    "powertransformer",
+                    PowerTransformer(method="yeo-johnson", standardize=True),
+                ),
                 ("univariate_sel", selec_k_best),
                 ("mars", mars),
             ]
@@ -265,9 +305,6 @@ def _test_best_mars(
         mutual_info_regression, k=best_mars.get_params().get("univariate_sel__k")
     )
     selec_k_best.fit(X_train, y_train)
-    X_train_2 = selec_k_best.transform(X_train)
-    X_test_2 = selec_k_best.transform(X_test)
-
     mask = selec_k_best.get_support()  # list of booleans
     selected_feat = []
 
@@ -323,9 +360,9 @@ def _test_best_mars(
     mlflow.sklearn.log_model(best_mars, "MARS")
 
     # save model
-    _save_model(output_folder, best_mars, wf, alg)
+    _save_model(output_folder, best_mars, wf, alg, predictions)
 
-    return best_mars, X_train_2, X_test_2, predictions
+    return best_mars, X_train, X_test, predictions
 
 
 def _build_knn(
@@ -371,7 +408,16 @@ def _build_knn(
             transformer=PowerTransformer(method="yeo-johnson", standardize=True),
             check_inverse=False,
         )
-        pipeline = Pipeline([("univariate_sel", selec_k_best), ("knn", knn)])
+        pipeline = Pipeline(
+            [
+                (
+                    "powertransformer",
+                    PowerTransformer(method="yeo-johnson", standardize=True),
+                ),
+                ("univariate_sel", selec_k_best),
+                ("knn", knn),
+            ]
+        )
         param_grid = {
             "knn__regressor__n_neighbors": n_neighbors,
             "knn__regressor__algorithm": ctx.params.get("knn_hypms").get("algorithm"),
@@ -381,7 +427,16 @@ def _build_knn(
         }
     else:
         knn = KNeighborsRegressor()
-        pipeline = Pipeline([("univariate_sel", selec_k_best), ("knn", knn)])
+        pipeline = Pipeline(
+            [
+                (
+                    "powertransformer",
+                    PowerTransformer(method="yeo-johnson", standardize=True),
+                ),
+                ("univariate_sel", selec_k_best),
+                ("knn", knn),
+            ]
+        )
         param_grid = {
             "knn__n_neighbors": n_neighbors,
             "knn__algorithm": ctx.params.get("knn_hypms").get("algorithm"),
@@ -423,9 +478,6 @@ def _test_best_knn(
         mutual_info_regression, k=best_knn.get_params().get("univariate_sel__k")
     )
     selec_k_best.fit(X_train, y_train)
-    X_train_2 = selec_k_best.transform(X_train)
-    X_test_2 = selec_k_best.transform(X_test)
-
     mask = selec_k_best.get_support()  # list of booleans
     selected_feat = []
 
@@ -483,9 +535,9 @@ def _test_best_knn(
     mlflow.sklearn.log_model(best_knn, "KNN")
 
     # save model
-    _save_model(output_folder, best_knn, wf, alg)
+    _save_model(output_folder, best_knn, wf, alg, predictions)
 
-    return best_knn, X_train_2, X_test_2, predictions
+    return best_knn, X_train, X_test, predictions
 
 
 def _build_svm(
@@ -524,11 +576,18 @@ def _build_svm(
 
     if transform_target:
         svm = TransformedTargetRegressor(
-            regressor=SVR(),
-            transformer=PowerTransformer(method="yeo-johnson", standardize=True),
-            check_inverse=False,
+            regressor=SVR(), transformer=StandardScaler(), check_inverse=False,
         )
-        pipeline = Pipeline([("univariate_sel", selec_k_best), ("svm", svm)])
+        pipeline = Pipeline(
+            [
+                (
+                    "powertransformer",
+                    PowerTransformer(method="yeo-johnson", standardize=True),
+                ),
+                ("univariate_sel", selec_k_best),
+                ("svm", svm),
+            ]
+        )
         param_grid = {
             "svm__regressor__kernel": ctx.params.get("svm_hypms").get("kernel"),
             "svm__regressor__C": ctx.params.get("svm_hypms").get("C"),
@@ -538,7 +597,16 @@ def _build_svm(
         }
     else:
         svm = SVR()
-        pipeline = Pipeline([("univariate_sel", selec_k_best), ("svm", svm)])
+        pipeline = Pipeline(
+            [
+                (
+                    "powertransformer",
+                    PowerTransformer(method="yeo-johnson", standardize=True),
+                ),
+                ("univariate_sel", selec_k_best),
+                ("svm", svm),
+            ]
+        )
         param_grid = {
             "svm__kernel": ctx.params.get("svm_hypms").get("kernel"),
             "svm__C": ctx.params.get("svm_hypms").get("C"),
@@ -580,9 +648,6 @@ def _test_best_svm(
         mutual_info_regression, k=best_svm.get_params().get("univariate_sel__k")
     )
     selec_k_best.fit(X_train, y_train)
-    X_train_2 = selec_k_best.transform(X_train)
-    X_test_2 = selec_k_best.transform(X_test)
-
     mask = selec_k_best.get_support()  # list of booleans
     selected_feat = []
 
@@ -636,9 +701,9 @@ def _test_best_svm(
     mlflow.sklearn.log_model(best_svm, "SVM")
 
     # save model
-    _save_model(output_folder, best_svm, wf, alg)
+    _save_model(output_folder, best_svm, wf, alg, predictions)
 
-    return best_svm, X_train_2, X_test_2, predictions
+    return best_svm, X_train, X_test, predictions
 
 
 def _build_rf(
@@ -674,6 +739,7 @@ def _build_rf(
         k_bests = [max_k_bests]
 
     selec_k_best = SelectKBest(mutual_info_regression, k=1)
+    max_features = list(range(1, max_k_bests + 1))
 
     if transform_target:
         rf = TransformedTargetRegressor(
@@ -681,14 +747,21 @@ def _build_rf(
             transformer=PowerTransformer(method="yeo-johnson", standardize=True),
             check_inverse=False,
         )
-        pipeline = Pipeline([("univariate_sel", selec_k_best), ("rf", rf)])
+        pipeline = Pipeline(
+            [
+                (
+                    "powertransformer",
+                    PowerTransformer(method="yeo-johnson", standardize=True),
+                ),
+                ("univariate_sel", selec_k_best),
+                ("rf", rf),
+            ]
+        )
         param_grid = {
             "rf__regressor__n_estimators": ctx.params.get("rf_hypms").get(
                 "n_estimators"
             ),
-            "rf__regressor__max_features": ctx.params.get("rf_hypms").get(
-                "max_features"
-            ),
+            "rf__regressor__max_features": max_features,
             "rf__regressor__max_depth": ctx.params.get("rf_hypms").get("max_depth"),
             "rf__regressor__min_samples_split": ctx.params.get("rf_hypms").get(
                 "min_samples_split"
@@ -700,10 +773,19 @@ def _build_rf(
         }
     else:
         rf = RandomForestRegressor(bootstrap=True, random_state=42)
-        pipeline = Pipeline([("univariate_sel", selec_k_best), ("rf", rf)])
+        pipeline = Pipeline(
+            [
+                (
+                    "powertransformer",
+                    PowerTransformer(method="yeo-johnson", standardize=True),
+                ),
+                ("univariate_sel", selec_k_best),
+                ("rf", rf),
+            ]
+        )
         param_grid = {
             "rf__n_estimators": ctx.params.get("rf_hypms").get("n_estimators"),
-            "rf__max_features": ctx.params.get("rf_hypms").get("max_features"),
+            "rf__max_features": max_features,
             "rf__max_depth": ctx.params.get("rf_hypms").get("max_depth"),
             "rf__min_samples_split": ctx.params.get("rf_hypms").get(
                 "min_samples_split"
@@ -745,9 +827,6 @@ def _test_best_rf(
         mutual_info_regression, k=best_rf.get_params().get("univariate_sel__k")
     )
     selec_k_best.fit(X_train, y_train)
-    X_train_2 = selec_k_best.transform(X_train)
-    X_test_2 = selec_k_best.transform(X_test)
-
     mask = selec_k_best.get_support()  # list of booleans
     selected_feat = []
 
@@ -814,12 +893,12 @@ def _test_best_rf(
     mlflow.log_metric("cape", cape)
 
     # artifacts
-    mlflow.sklearn.log_model(best_rf, "SVM")
+    mlflow.sklearn.log_model(best_rf, "RF")
 
     # save model
-    _save_model(output_folder, best_rf, wf, alg)
+    _save_model(output_folder, best_rf, wf, alg, predictions)
 
-    return best_rf, X_train_2, X_test_2, predictions
+    return best_rf, X_train, X_test, predictions
 
 
 def _regression_plots(
@@ -844,22 +923,31 @@ def _regression_plots(
         in data/08_reporting/figures.
 
     """
+
     # Get model from received pipeline object
+    pt = model[0]
+    kbest_tf = model[1]
     model = model.get_params().get(alg.lower())
 
+    X_train = pt.fit_transform(X_train)
+    X_test = pt.transform(X_test)
+
+    X_train = kbest_tf.fit_transform(X_train, y_train)
+    X_test = kbest_tf.transform(X_test)
+
     # Residuals plot
-    visualizer = ResidualsPlot(model, title=alg)
+    visualizer = ResidualsPlot(model, title=alg, is_fitted=True)
     visualizer.fit(X_train, y_train)
     visualizer.score(X_test, y_test)
-    visualizer.show(outpath=dest_folder + "residual_plots.png"),
-    visualizer.show(clear_figure=True)
+    visualizer.show(outpath=dest_folder + "residual_plots.png", clear_figure=True),
+    # visualizer.show(clear_figure=True)
 
     # Prediction error plot
-    visualizer = PredictionError(model, title=alg)
+    visualizer = PredictionError(model, title=alg, is_fitted=True)
     visualizer.fit(X_train, y_train)
     visualizer.score(X_test, y_test)
-    visualizer.show(outpath=dest_folder + "prediction_error.png")
-    visualizer.show(clear_figure=True)
+    visualizer.show(outpath=dest_folder + "prediction_error.png", clear_figure=True)
+    # visualizer.show(clear_figure=True)
 
 
 def _validation_plots(
@@ -888,73 +976,86 @@ def _validation_plots(
         in data/08_reporting/figures.
 
     """
-    model = model.get_params().get(alg.lower())
+
+    def positive_rmse(estimator, X, y):
+        y_pred = estimator.predict(X)
+        rmse = mean_squared_error(y, y_pred, squared=False)
+        return np.abs(rmse)
+
     cv = TimeSeriesSplit(n_splits)
     if transform_target:
         model = model.regressor_
+
+    pt = model[0]
+    kbest_tf = model[1]
+    model = model.get_params().get(alg.lower())
+    X_train = pt.fit_transform(X_train)
+    X_train = kbest_tf.fit_transform(X_train, y_train)
 
     # Validation curves
     if alg == "MARS":
         viz = ValidationCurve(
             model,
-            param_name="max_degree",
-            param_range=np.arange(1, 11),
+            param_name="max_terms",
+            param_range=np.arange(1, 500, 30),
             cv=cv,
-            scoring=scorer,
+            scoring=positive_rmse,
             title=alg,
         )
     elif alg == "KNN":
         viz = ValidationCurve(
             model,
             param_name="n_neighbors",
-            param_range=np.arange(1, 55),
+            param_range=np.arange(1, 50, 2),
             cv=cv,
-            scoring=scorer,
+            scoring=positive_rmse,
             title=alg,
         )
     elif alg == "SVM":
         viz = ValidationCurve(
             model,
-            param_name="gamma",
-            param_range=np.logspace(-6, 6, 20),
+            param_name="epsilon",
+            param_range=np.logspace(-5, 0, 12),
             cv=cv,
-            scoring=scorer,
+            scoring=positive_rmse,
             title=alg,
         )
     elif alg == "RF":
         viz = ValidationCurve(
             model,
-            param_name="n_estimators",
-            param_range=np.arange(1, 225, 20),
+            param_name="min_samples_leaf",
+            param_range=np.logspace(-4, 0, 20, endpoint=True),
             cv=cv,
-            scoring=scorer,
+            scoring=positive_rmse,
             title=alg,
         )
 
     viz.fit(X_train, y_train)
-    viz.show(outpath=dest_folder + "validation_curves.png")
-    viz.show(clear_figure=True)
+    viz.show(outpath=dest_folder + "validation_curves.png", clear_figure=True)
+    # viz.show(clear_figure=True)
 
     # Learning curves
     visualizer = LearningCurve(
         model,
-        scoring=scorer,
+        cv=10,
+        scoring=positive_rmse,
         title=alg,
+        train_sizes=np.linspace(0.1, 1.0, 10),
     )
     visualizer.fit(X_train, y_train)
-    visualizer.show(outpath=dest_folder + "learning_curves.png")
-    visualizer.show(clear_figure=True)
+    visualizer.show(outpath=dest_folder + "learning_curves.png", clear_figure=True)
+    # visualizer.show(clear_figure=True)
 
     # Cross validation scores.
     visualizer = CVScores(
         model,
         cv=cv,
-        scoring=scorer,
+        scoring=positive_rmse,
         title="Errores en validación cruzada para {}".format(alg),
     )
     visualizer.fit(X_train, y_train)
-    visualizer.show(outpath=dest_folder + "cv_scores.png")
-    visualizer.show(clear_figure=True)
+    visualizer.show(outpath=dest_folder + "cv_scores.png", clear_figure=True)
+    # visualizer.show(clear_figure=True)
 
 
 def _time_series_plots(wf, predictions, dest_folder):
@@ -999,8 +1100,9 @@ def _time_series_plots(wf, predictions, dest_folder):
         x="Time",
         y=["real", "estimado"],
         labels={"Time": "Fecha", "value": "Producción (MWh)"},
+        template="plotly_white",
     )
-    fig.write_image(dest_folder + "ts_predictions.png")
+    fig.write_image(dest_folder + "ts_predictions_plot.png")
 
 
 def _feature_selection_plots(
@@ -1144,7 +1246,7 @@ def test_model(
     feature_names = data[4]
 
     if alg == "MARS":
-        model, X_train_2, X_test_2, predictions = _test_best_mars(
+        model, X_train, X_test, predictions = _test_best_mars(
             wf,
             best_model,
             alg,
@@ -1157,7 +1259,7 @@ def test_model(
             transform_target,
         )
     elif alg == "KNN":
-        model, X_train_2, X_test_2, predictions = _test_best_knn(
+        model, X_train_, X_test, predictions = _test_best_knn(
             wf,
             best_model,
             alg,
@@ -1170,7 +1272,7 @@ def test_model(
             transform_target,
         )
     elif alg == "SVM":
-        model, X_train_2, X_test_2, predictions = _test_best_svm(
+        model, X_train, X_test, predictions = _test_best_svm(
             wf,
             best_model,
             alg,
@@ -1183,7 +1285,7 @@ def test_model(
             transform_target,
         )
     elif alg == "RF":
-        model, X_train_2, X_test_2, predictions = _test_best_rf(
+        model, X_train, X_test, predictions = _test_best_rf(
             wf,
             best_model,
             alg,
@@ -1196,7 +1298,7 @@ def test_model(
             transform_target,
         )
 
-    return model, X_train_2, X_test_2, predictions
+    return model, X_train, X_test, predictions
 
 
 def get_model_plots(
@@ -1204,8 +1306,8 @@ def get_model_plots(
     alg: str,
     model: object,
     predictions: np.ndarray,
-    X_train_2: np.ndarray,
-    X_test_2: np.ndarray,
+    X_train: np.ndarray,
+    X_test: np.ndarray,
     n_splits: int,
     scorer: object,
     folder: str,
@@ -1223,24 +1325,17 @@ def get_model_plots(
     y_test = data[3]
 
     # Create destination folder
-    os.makedirs(folder + "figures/" + wf + "/", exist_ok=True)
-    dest_folder = folder + "figures/" + wf + "/"
+    os.makedirs(folder + "figures/" + wf + "/" + alg + "/", exist_ok=True)
+    dest_folder = folder + "figures/" + wf + "/" + alg + "/"
 
     _regression_plots(
-        wf,
-        alg,
-        model,
-        X_train_2,
-        y_train,
-        X_test_2,
-        y_test,
-        dest_folder,
+        wf, alg, model, X_train, y_train, X_test, y_test, dest_folder,
     )
     _validation_plots(
         wf,
         alg,
         model,
-        X_train_2,
+        X_train,
         y_train,
         n_splits,
         scorer,

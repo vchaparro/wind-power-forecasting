@@ -6,8 +6,8 @@ from .nodes import (
     fix_negative_values,
     export_data,
     select_best_NWP_features,
+    clean_outliers,
 )
-from wind_power_forecasting.pipelines.data_engineering.nodes import clean_outliers
 
 
 def create_pipeline(**kargs):
