@@ -1,0 +1,13 @@
+artifact_path: mars
+flavors:
+  python_function:
+    env: conda.yaml
+    loader_module: mlflow.sklearn
+    model_path: model.pkl
+    python_version: 3.7.8
+  sklearn:
+    pickled_model: model.pkl
+    serialization_format: cloudpickle
+    sklearn_version: 0.23.2
+run_id: 1b5c2255362b4c849c8ce50f4104e7f5
+utc_time_created: '2020-10-11 19:19:56.598617'

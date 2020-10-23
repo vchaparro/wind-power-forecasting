@@ -8,11 +8,12 @@ from metpy import calc
 from metpy.units import units
 
 
-def get_wind_speed(x: pd.DataFrame) -> float:
+def _get_wind_speed(x: pd.DataFrame) -> float:
     """ Function to get wind speed from wind velocity components U and V.
     
         Args:
-            x: Feature data frame containing components U and V as columns.
+            x: Features data frame containing components U and V as columns.
+            
         Returns: 
             Wind speed for each pair <U,V>.
 
@@ -24,11 +25,12 @@ def get_wind_speed(x: pd.DataFrame) -> float:
     )
 
 
-def get_wind_dir(x: pd.DataFrame) -> float:
+def _get_wind_dir(x: pd.DataFrame) -> float:
     """ Function to get wind direction from wind velocity components U and V.
     
         Args:
-            x: Feature data frame containing components U and V as columns.
+            x: Features data frame containing components U and V as columns.
+            
         Returns: 
             Wind direction for each pair <U,V>.
 
@@ -44,26 +46,36 @@ def get_wind_dir(x: pd.DataFrame) -> float:
 
 
 # Enconding cyclic variables
-def encode_cyclic(data, col, max_val):
+def _encode_cyclic(data, col, max_val):
     data[col + "_sin"] = np.sin(2 * np.pi * data[col] / max_val)
     data[col + "_cos"] = np.cos(2 * np.pi * data[col] / max_val)
 
 
-# Class to add the new features
 class NewFeaturesAdder(BaseEstimator, TransformerMixin):
-    def __init__(self, add_time_feat=False, add_cycl_feat=False, add_inv_T=False):
+    """Scikit-learn custom transformer that allows to add new features
+    derived from the original ones.
+    """
+
+    def __init__(
+        self,
+        add_time_feat=False,
+        add_cycl_feat=False,
+        add_inv_T=False,
+        add_interactions=False,
+    ):
         self.add_time_feat = add_time_feat
         self.add_cycl_feat = add_cycl_feat
         self.add_inv_T = add_inv_T
+        self.add_interactions = add_interactions
 
     def fit(self, documents, y=None):
         return self
 
-    def transform(self, x_dataset):
+    def transform(self, x_dataset) -> pd.DataFrame:
 
         # Velocity derived features
-        x_dataset["wspeed"] = x_dataset.apply(get_wind_speed, axis=1)
-        x_dataset["wdir"] = x_dataset.apply(get_wind_dir, axis=1)
+        x_dataset["wspeed"] = x_dataset.apply(_get_wind_speed, axis=1)
+        x_dataset["wdir"] = x_dataset.apply(_get_wind_dir, axis=1)
 
         if self.add_time_feat:
             # Time derived features
@@ -71,21 +83,56 @@ class NewFeaturesAdder(BaseEstimator, TransformerMixin):
             x_dataset["month"] = x_dataset["Time"].dt.month
 
         if self.add_cycl_feat:
-            # Time derived features
-            x_dataset["hour"] = x_dataset["Time"].dt.hour
-            x_dataset["month"] = x_dataset["Time"].dt.month
+            if self.add_time_feat == False:
+                _encode_cyclic(x_dataset, "wdir", 360)
+            else:
+                # Hour
+                _encode_cyclic(x_dataset, "hour", 24)
 
-            # Hour
-            encode_cyclic(x_dataset, "hour", 24)
+                # Month
+                _encode_cyclic(x_dataset, "month", 12)
 
-            # Month
-            encode_cyclic(x_dataset, "month", 12)
-
-            # Wind direction
-            encode_cyclic(x_dataset, "w_dir", 360)
+                # Wind direction
+                _encode_cyclic(x_dataset, "wdir", 360)
 
         if self.add_inv_T:
             x_dataset["inv_T"] = 1 / x_dataset["T"]
+
+        if self.add_interactions:
+            if not self.add_cycl_feat:
+                x_dataset["wspeed_wdir"] = x_dataset["wspeed"] * x_dataset["wdir"]
+                x_dataset["wspeed_T"] = x_dataset["wspeed"] * x_dataset["T"]
+                x_dataset["wspeed_wdir_T"] = (
+                    x_dataset["wspeed"] * x_dataset["wdir"] * x_dataset["T"]
+                )
+
+                if self.add_inv_T:
+                    x_dataset["wspeed_invT"] = x_dataset["wspeed"] * x_dataset["inv_T"]
+                    x_dataset["wspeed_wdir_invT"] = (
+                        x_dataset["wspeed"] * x_dataset["wdir"] * x_dataset["inv_T"]
+                    )
+            else:
+                x_dataset["wspeed_T"] = x_dataset["wspeed"] * x_dataset["T"]
+                x_dataset["wspeed_wdirsin"] = (
+                    x_dataset["wspeed"] * x_dataset["wdir_sin"]
+                )
+                x_dataset["wspeed_wdircos"] = (
+                    x_dataset["wspeed"] * x_dataset["wdir_cos"]
+                )
+                x_dataset["wspeed_wdirsin_T"] = (
+                    x_dataset["wspeed"] * x_dataset["wdir_sin"] * x_dataset["T"]
+                )
+                x_dataset["wspeed_wdircos_T"] = (
+                    x_dataset["wspeed"] * x_dataset["wdir_cos"] * x_dataset["T"]
+                )
+                if self.add_inv_T:
+                    x_dataset["wspeed_invT"] = x_dataset["wspeed"] * x_dataset["inv_T"]
+                    x_dataset["wspeed_wdirsin_invT"] = (
+                        x_dataset["wspeed"] * x_dataset["wdir_sin"] * x_dataset["inv_T"]
+                    )
+                    x_dataset["wspeed_wdircos_invT"] = (
+                        x_dataset["wspeed"] * x_dataset["wdir_cos"] * x_dataset["inv_T"]
+                    )
 
         return x_dataset
 
@@ -286,8 +333,8 @@ def add_wind_vars(df, regex):
             inplace=True,
         )
 
-        df["NWP" + nwp + "_wvel"] = sub_df.apply(get_wind_velmod, axis=1)
-        df["NWP" + nwp + "_wdir"] = sub_df.apply(get_wind_dir, axis=1)
+        df["NWP" + nwp + "_wvel"] = sub_df.apply(_get_wind_speed, axis=1)
+        df["NWP" + nwp + "_wdir"] = sub_df.apply(_get_wind_dir, axis=1)
         df["NWP" + nwp + "_wdir_sin"] = np.sin(
             2 * np.pi * df["NWP" + nwp + "_wdir"] / 360
         )
@@ -316,8 +363,8 @@ def add_time_vars(df, time_col):
     df["hour"] = df[time_col].dt.hour
     df["month"] = df[time_col].dt.month
 
-    encode_cyclic(df, "hour", 24)
-    encode_cyclic(df, "month", 12)
+    _encode_cyclic(df, "hour", 24)
+    _encode_cyclic(df, "month", 12)
 
     return df
 

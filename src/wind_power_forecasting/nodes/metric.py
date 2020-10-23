@@ -1,11 +1,5 @@
-"""
-Example of custom metric script.
-The custom metric script must contain the definition of custom_metric_function and a main function
-that reads the two csv files with pandas and evaluate the custom metric.
-"""
-
-# TODO: add here the import necessary to your metric function
 import numpy as np
+
 
 def get_cape(Y_true, Y_pred):
     """
@@ -27,6 +21,6 @@ def get_cape(Y_true, Y_pred):
     """
 
     # CAPE function
-    cape = 100 * np.sum(np.abs(Y_pred-Y_true)) / np.sum(Y_true)
+    cape = 100 * np.sum(np.abs(Y_pred - Y_true)) / np.sum(Y_true)
 
     return cape

@@ -1,0 +1,217 @@
+# Cleaned data prepared for feature engineering
+
+X_train_WF1:
+  type: pandas.CSVDataSet
+  filepath: data/03_primary/WF1/X_train.csv
+  load_args:
+    sep: ","
+  save_args:
+    index: False
+    date_format: "%d/%m/%Y %H:%M"
+
+X_test_WF1:
+  type: pandas.CSVDataSet
+  filepath: data/03_primary/WF1/X_test.csv
+  load_args:
+    sep: ","
+  save_args:
+    index: False
+    date_format: "%d/%m/%Y %H:%M"
+
+y_train_WF1:
+  type: pandas.CSVDataSet
+  filepath: data/03_primary/WF1/y_train.csv
+  load_args:
+    sep: ","
+    header:
+  save_args:
+    index: False
+
+y_test_WF1:
+  type: pandas.CSVDataSet
+  filepath: data/03_primary/WF1/y_test.csv
+  load_args:
+    sep: ","
+    header:
+  save_args:
+    index: False
+
+X_train_WF2:
+  type: pandas.CSVDataSet
+  filepath: data/03_primary/WF2/X_train.csv
+  load_args:
+    sep: ","
+  save_args:
+    index: False
+    date_format: "%d/%m/%Y %H:%M"
+
+X_test_WF2:
+  type: pandas.CSVDataSet
+  filepath: data/03_primary/WF2/X_test.csv
+  load_args:
+    sep: ","
+  save_args:
+    index: False
+    date_format: "%d/%m/%Y %H:%M"
+
+y_train_WF2:
+  type: pandas.CSVDataSet
+  filepath: data/03_primary/WF2/y_train.csv
+  load_args:
+    sep: ","
+    header:
+  save_args:
+    index: False
+
+y_test_WF2:
+  type: pandas.CSVDataSet
+  filepath: data/03_primary/WF2/y_test.csv
+  load_args:
+    sep: ","
+    header:
+  save_args:
+    index: False
+
+X_train_WF3:
+  type: pandas.CSVDataSet
+  filepath: data/03_primary/WF3/X_train.csv
+  load_args:
+    sep: ","
+  save_args:
+    index: False
+    date_format: "%d/%m/%Y %H:%M"
+
+X_test_WF3:
+  type: pandas.CSVDataSet
+  filepath: data/03_primary/WF3/X_test.csv
+  load_args:
+    sep: ","
+  save_args:
+    index: False
+    date_format: "%d/%m/%Y %H:%M"
+
+y_train_WF3:
+  type: pandas.CSVDataSet
+  filepath: data/03_primary/WF3/y_train.csv
+  load_args:
+    sep: ","
+    header:
+  save_args:
+    index: False
+
+y_test_WF3:
+  type: pandas.CSVDataSet
+  filepath: data/03_primary/WF3/y_test.csv
+  load_args:
+    sep: ","
+    header:
+  save_args:
+    index: False
+
+X_train_WF4:
+  type: pandas.CSVDataSet
+  filepath: data/03_primary/WF4/X_train.csv
+  load_args:
+    sep: ","
+  save_args:
+    index: False
+    date_format: "%d/%m/%Y %H:%M"
+
+X_test_WF4:
+  type: pandas.CSVDataSet
+  filepath: data/03_primary/WF4/X_test.csv
+  load_args:
+    sep: ","
+  save_args:
+    index: False
+    date_format: "%d/%m/%Y %H:%M"
+
+y_train_WF4:
+  type: pandas.CSVDataSet
+  filepath: data/03_primary/WF4/y_train.csv
+  load_args:
+    sep: ","
+    header:
+  save_args:
+    index: False
+
+y_test_WF4:
+  type: pandas.CSVDataSet
+  filepath: data/03_primary/WF4/y_test.csv
+  load_args:
+    sep: ","
+    header:
+  save_args:
+    index: False
+
+X_train_WF5:
+  type: pandas.CSVDataSet
+  filepath: data/03_primary/WF5/X_train.csv
+  load_args:
+    sep: ","
+  save_args:
+    index: False
+    date_format: "%d/%m/%Y %H:%M"
+
+X_test_WF5:
+  type: pandas.CSVDataSet
+  filepath: data/03_primary/WF5/X_test.csv
+  load_args:
+    sep: ","
+  save_args:
+    index: False
+    date_format: "%d/%m/%Y %H:%M"
+
+y_train_WF5:
+  type: pandas.CSVDataSet
+  filepath: data/03_primary/WF5/y_train.csv
+  load_args:
+    sep: ","
+    header:
+  save_args:
+    index: False
+
+y_test_WF5:
+  type: pandas.CSVDataSet
+  filepath: data/03_primary/WF5/y_test.csv
+  load_args:
+    sep: ","
+    header:
+  save_args:
+    index: False
+
+X_train_WF6:
+  type: pandas.CSVDataSet
+  filepath: data/03_primary/WF6/X_train.csv
+  load_args:
+    sep: ","
+  save_args:
+    index: False
+    date_format: "%d/%m/%Y %H:%M"
+
+X_test_WF6:
+  type: pandas.CSVDataSet
+  filepath: data/03_primary/WF6/X_test.csv
+  load_args:
+    sep: ","
+  save_args:
+    index: False
+    date_format: "%d/%m/%Y %H:%M"
+
+y_train_WF6:
+  type: pandas.CSVDataSet
+  filepath: data/03_primary/WF6/y_train.csv
+  load_args:
+    sep: ","
+    header:
+  save_args:
+    index: False
+
+y_test_WF6:
+  type: pandas.CSVDataSet
+  filepath: data/03_primary/WF6/y_test.csv
+  load_args:
+    sep: ","
+    header:
+  save_args:
+    index: False

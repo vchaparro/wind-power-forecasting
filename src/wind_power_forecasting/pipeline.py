@@ -1,39 +1,19 @@
-# Copyright 2020 QuantumBlack Visual Analytics Limited
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-# OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND
-# NONINFRINGEMENT. IN NO EVENT WILL THE LICENSOR OR OTHER CONTRIBUTORS
-# BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN
-# ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF, OR IN
-# CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-#
-# The QuantumBlack Visual Analytics Limited ("QuantumBlack") name and logo
-# (either separately or in combination, "QuantumBlack Trademarks") are
-# trademarks of QuantumBlack. The License does not grant you any right or
-# license to the QuantumBlack Trademarks. You may not use the QuantumBlack
-# Trademarks or any confusingly similar mark as a trademark for your product,
-# or use the QuantumBlack Trademarks in any other manner that might cause
-# confusion in the marketplace, including but not limited to in advertising,
-# on websites, or on software.
-#
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 """Construction of the master pipeline.
 """
 
 from typing import Dict
-from .pipelines.prepare_data_for_ml import pipeline as dml
-from .pipelines.prepare_data_for_eda import pipeline as deda
-from .pipelines.prepare_data_for_ml.nodes import log_running_time
+
 from kedro.pipeline import Pipeline
+
+from .pipelines.CNR_challenge import data_preprocess as dcnr
+from .pipelines.CNR_challenge import feature_engineering as fecnr
+from .pipelines.CNR_challenge import make_models as pcnr
+from .pipelines.data_engineering import pipeline as de
+from .pipelines.data_engineering.nodes import log_running_time
+from .pipelines.exploratory_data_analysis import pipeline as eda
+from .pipelines.feature_engineering import pipeline as fe
+from .pipelines.modeling import pipeline as mdl
+from .pipelines.neural_network import pipeline as nn
 
 
 def create_pipelines(**kwargs) -> Dict[str, Pipeline]:
@@ -46,11 +26,30 @@ def create_pipelines(**kwargs) -> Dict[str, Pipeline]:
         A mapping from a pipeline name to a ``Pipeline`` object.
 
     """
-    prepare_data_for_ml = dml.create_pipeline().decorate(log_running_time)
-    prepare_data_for_eda = deda.create_pipeline().decorate(log_running_time)
+    data_engineering = de.create_pipeline().decorate(log_running_time)
+    exploratory_data_analysis = eda.create_pipeline().decorate(log_running_time)
+    feature_engineering = fe.create_pipeline().decorate(log_running_time)
+    modeling = mdl.create_pipeline().decorate(log_running_time)
+    neural_network = nn.create_pipeline().decorate(log_running_time)
+    data_for_CNR = dcnr.create_pipeline().decorate(log_running_time)
+    feat_engineering_CNR = fecnr.create_pipeline().decorate(log_running_time)
+    predictions_CNR = pcnr.create_pipeline().decorate(log_running_time)
 
     return {
-        "dml": prepare_data_for_ml,
-        "deda": prepare_data_for_eda,
-        "__default__": prepare_data_for_ml + prepare_data_for_eda,
+        "de": data_engineering,
+        "eda": exploratory_data_analysis,
+        "fe": feature_engineering,
+        "mdl": modeling,
+        "nn": neural_network,
+        "dcnr": data_for_CNR,
+        "fecnr": feat_engineering_CNR,
+        "pcnr": predictions_CNR,
+        "__default__": data_engineering
+        + feature_engineering
+        + exploratory_data_analysis
+        + modeling
+        + neural_network
+        + data_for_CNR
+        + feat_engineering_CNR
+        + predictions_CNR,
     }

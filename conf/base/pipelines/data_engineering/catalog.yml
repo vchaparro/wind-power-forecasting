@@ -1,0 +1,26 @@
+# Raw data
+X_train_raw:
+  type: pandas.CSVDataSet
+  filepath: data/01_raw/X_train_raw.csv
+  load_args:
+    sep: ","
+  save_args:
+    index: False
+    date_format: "%d/%m/%Y %H:%M"
+
+X_test_raw:
+  type: pandas.CSVDataSet
+  filepath: data/01_raw/X_test_raw.csv
+  load_args:
+    sep: ","
+  save_args:
+    index: False
+    date_format: "%d/%m/%Y %H:%M"
+
+y_train_raw:
+  type: pandas.CSVDataSet
+  filepath: data/01_raw/y_train_raw.csv
+  load_args:
+    sep: ","
+  save_args:
+    index: False

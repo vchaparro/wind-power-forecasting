@@ -1,0 +1,255 @@
+# Preprocessed data ready for feature engineering
+
+Xtrain_WF1:
+  type: pandas.CSVDataSet
+  filepath: data/CNR/01_primary_data/WF1/X_train.csv
+  load_args:
+    sep: ","
+  save_args:
+    index: False
+    date_format: "%d/%m/%Y %H:%M"
+
+Xtest_WF1:
+  type: pandas.CSVDataSet
+  filepath: data/CNR/01_primary_data/WF1/X_test.csv
+  load_args:
+    sep: ","
+  save_args:
+    index: False
+    date_format: "%d/%m/%Y %H:%M"
+
+ytrain_WF1:
+  type: pandas.CSVDataSet
+  filepath: data/CNR/01_primary_data/WF1/y_train.csv
+  load_args:
+    sep: ","
+    header:
+  save_args:
+    index: False
+
+Xtrain_WF2:
+  type: pandas.CSVDataSet
+  filepath: data/CNR/01_primary_data/WF2/X_train.csv
+  load_args:
+    sep: ","
+  save_args:
+    index: False
+    date_format: "%d/%m/%Y %H:%M"
+
+Xtest_WF2:
+  type: pandas.CSVDataSet
+  filepath: data/CNR/01_primary_data/WF2/X_test.csv
+  load_args:
+    sep: ","
+  save_args:
+    index: False
+    date_format: "%d/%m/%Y %H:%M"
+
+ytrain_WF2:
+  type: pandas.CSVDataSet
+  filepath: data/CNR/01_primary_data/WF2/y_train.csv
+  load_args:
+    sep: ","
+    header:
+  save_args:
+    index: False
+
+Xtrain_WF3:
+  type: pandas.CSVDataSet
+  filepath: data/CNR/01_primary_data/WF3/X_train.csv
+  load_args:
+    sep: ","
+  save_args:
+    index: False
+    date_format: "%d/%m/%Y %H:%M"
+
+Xtest_WF3:
+  type: pandas.CSVDataSet
+  filepath: data/CNR/01_primary_data/WF3/X_test.csv
+  load_args:
+    sep: ","
+  save_args:
+    index: False
+    date_format: "%d/%m/%Y %H:%M"
+
+ytrain_WF3:
+  type: pandas.CSVDataSet
+  filepath: data/CNR/01_primary_data/WF3/y_train.csv
+  load_args:
+    sep: ","
+    header:
+  save_args:
+    index: False
+
+Xtrain_WF4:
+  type: pandas.CSVDataSet
+  filepath: data/CNR/01_primary_data/WF4/X_train.csv
+  load_args:
+    sep: ","
+  save_args:
+    index: False
+    date_format: "%d/%m/%Y %H:%M"
+
+Xtest_WF4:
+  type: pandas.CSVDataSet
+  filepath: data/CNR/01_primary_data/WF4/X_test.csv
+  load_args:
+    sep: ","
+  save_args:
+    index: False
+    date_format: "%d/%m/%Y %H:%M"
+
+ytrain_WF4:
+  type: pandas.CSVDataSet
+  filepath: data/CNR/01_primary_data/WF4/y_train.csv
+  load_args:
+    sep: ","
+    header:
+  save_args:
+    index: False
+
+Xtrain_WF5:
+  type: pandas.CSVDataSet
+  filepath: data/CNR/01_primary_data/WF5/X_train.csv
+  load_args:
+    sep: ","
+  save_args:
+    index: False
+    date_format: "%d/%m/%Y %H:%M"
+
+Xtest_WF5:
+  type: pandas.CSVDataSet
+  filepath: data/CNR/01_primary_data/WF5/X_test.csv
+  load_args:
+    sep: ","
+  save_args:
+    index: False
+    date_format: "%d/%m/%Y %H:%M"
+
+ytrain_WF5:
+  type: pandas.CSVDataSet
+  filepath: data/CNR/01_primary_data/WF5/y_train.csv
+  load_args:
+    sep: ","
+    header:
+  save_args:
+    index: False
+
+Xtrain_WF6:
+  type: pandas.CSVDataSet
+  filepath: data/CNR/01_primary_data/WF6/X_train.csv
+  load_args:
+    sep: ","
+  save_args:
+    index: False
+    date_format: "%d/%m/%Y %H:%M"
+
+Xtest_WF6:
+  type: pandas.CSVDataSet
+  filepath: data/CNR/01_primary_data/WF6/X_test.csv
+  load_args:
+    sep: ","
+  save_args:
+    index: False
+    date_format: "%d/%m/%Y %H:%M"
+
+ytrain_WF6:
+  type: pandas.CSVDataSet
+  filepath: data/CNR/01_primary_data/WF6/y_train.csv
+  load_args:
+    sep: ","
+    header:
+  save_args:
+    index: False
+
+# Post-feature engineering data prepared for ML
+
+Xtrain_pped_WF1:
+  type: pickle.PickleDataSet
+  filepath: data/CNR/02_prepared_data/WF1/X_train_pped.pickle
+  backend: pickle
+
+Xtest_pped_WF1:
+  type: pickle.PickleDataSet
+  filepath: data/CNR/02_prepared_data/WF1/X_test_pped.pickle
+  backend: pickle
+
+fnames_WF1:
+  type: pickle.PickleDataSet
+  filepath: data/CNR/02_prepared_data/WF1/feature_names.pickle
+  backend: pickle
+
+Xtrain_pped_WF2:
+  type: pickle.PickleDataSet
+  filepath: data/CNR/02_prepared_data/WF2/X_train_pped.pickle
+  backend: pickle
+
+Xtest_pped_WF2:
+  type: pickle.PickleDataSet
+  filepath: data/CNR/02_prepared_data/WF2/X_test_pped.pickle
+  backend: pickle
+
+fnames_WF2:
+  type: pickle.PickleDataSet
+  filepath: data/CNR/02_prepared_data/WF2/feature_names.pickle
+  backend: pickle
+
+Xtrain_pped_WF3:
+  type: pickle.PickleDataSet
+  filepath: data/CNR/02_prepared_data/WF3/X_train_pped.pickle
+  backend: pickle
+
+Xtest_pped_WF3:
+  type: pickle.PickleDataSet
+  filepath: data/CNR/02_prepared_data/WF3/X_test_pped.pickle
+  backend: pickle
+
+fnames_WF3:
+  type: pickle.PickleDataSet
+  filepath: data/CNR/02_prepared_data/WF3/feature_names.pickle
+  backend: pickle
+
+Xtrain_pped_WF4:
+  type: pickle.PickleDataSet
+  filepath: data/CNR/02_prepared_data/WF4/X_train_pped.pickle
+  backend: pickle
+
+Xtest_pped_WF4:
+  type: pickle.PickleDataSet
+  filepath: data/CNR/02_prepared_data/WF4/X_test_pped.pickle
+  backend: pickle
+
+fnames_WF4:
+  type: pickle.PickleDataSet
+  filepath: data/CNR/02_prepared_data/WF4/feature_names.pickle
+  backend: pickle
+
+Xtrain_pped_WF5:
+  type: pickle.PickleDataSet
+  filepath: data/CNR/02_prepared_data/WF5/X_train_pped.pickle
+  backend: pickle
+
+Xtest_pped_WF5:
+  type: pickle.PickleDataSet
+  filepath: data/CNR/02_prepared_data/WF5/X_test_pped.pickle
+  backend: pickle
+
+fnames_WF5:
+  type: pickle.PickleDataSet
+  filepath: data/CNR/02_prepared_data/WF5/feature_names.pickle
+  backend: pickle
+
+Xtrain_pped_WF6:
+  type: pickle.PickleDataSet
+  filepath: data/CNR/02_prepared_data/WF6/X_train_pped.pickle
+  backend: pickle
+
+Xtest_pped_WF6:
+  type: pickle.PickleDataSet
+  filepath: data/CNR/02_prepared_data/WF6/X_test_pped.pickle
+  backend: pickle
+
+fnames_WF6:
+  type: pickle.PickleDataSet
+  filepath: data/CNR/02_prepared_data/WF6/feature_names.pickle
+  backend: pickle

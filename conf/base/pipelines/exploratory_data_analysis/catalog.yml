@@ -1,0 +1,63 @@
+
+## X_train and X_test expanded with new features for EDA after
+## feature engineering (without center-scaling)
+
+X_train_expanded_WF1:
+  type: pickle.PickleDataSet
+  filepath: data/04_feature/WF1/X_train_expanded.pickle
+  backend: pickle
+
+X_test_expanded_WF1:
+  type: pickle.PickleDataSet
+  filepath: data/04_feature/WF1/X_test_expanded.pickle
+  backend: pickle
+
+X_train_expanded_WF2:
+  type: pickle.PickleDataSet
+  filepath: data/04_feature/WF2/X_train_expanded.pickle
+  backend: pickle
+
+X_test_expanded_WF2:
+  type: pickle.PickleDataSet
+  filepath: data/04_feature/WF2/X_test_expanded.pickle
+  backend: pickle
+
+X_train_expanded_WF3:
+  type: pickle.PickleDataSet
+  filepath: data/04_feature/WF3/X_train_expanded.pickle
+  backend: pickle
+
+X_test_expanded_WF3:
+  type: pickle.PickleDataSet
+  filepath: data/04_feature/WF3/X_test_expanded.pickle
+  backend: pickle
+
+X_train_expanded_WF4:
+  type: pickle.PickleDataSet
+  filepath: data/04_feature/WF4/X_train_expanded.pickle
+  backend: pickle
+
+X_test_expanded_WF4:
+  type: pickle.PickleDataSet
+  filepath: data/04_feature/WF4/X_test_expanded.pickle
+  backend: pickle
+
+X_train_expanded_WF5:
+  type: pickle.PickleDataSet
+  filepath: data/04_feature/WF5/X_train_expanded.pickle
+  backend: pickle
+
+X_test_expanded_WF5:
+  type: pickle.PickleDataSet
+  filepath: data/04_feature/WF5/X_test_expanded.pickle
+  backend: pickle
+
+X_train_expanded_WF6:
+  type: pickle.PickleDataSet
+  filepath: data/04_feature/WF6/X_train_expanded.pickle
+  backend: pickle
+
+X_test_expanded_WF6:
+  type: pickle.PickleDataSet
+  filepath: data/04_feature/WF6/X_test_expanded.pickle
+  backend: pickle
