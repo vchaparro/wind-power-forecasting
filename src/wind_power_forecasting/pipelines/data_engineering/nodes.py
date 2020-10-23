@@ -73,9 +73,9 @@ def _save_fig(
 def _plot_flagged_pc(ws, p, flag_bool, alpha):
     plt.scatter(ws, p, s=3, alpha=alpha)
     plt.scatter(ws[flag_bool], p[flag_bool], s=3, c="red")
-    plt.xlabel("velocidad (m/s)")
-    plt.ylabel("potencia (MWh)")
-    # plt.show()
+    plt.xlabel("velocidad (m/s)", fontsize=20)
+    plt.ylabel("potencia (MWh)", fontsize=20)
+    plt.show()
 
 
 def get_data_by_wf(X: pd.DataFrame, y: pd.Series, wf: str) -> pd.DataFrame:

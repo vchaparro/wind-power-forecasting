@@ -466,15 +466,15 @@ def predict(wf: str, model: object, output_folder: str, alg: str) -> np.ndarray:
     # Create submission file
     submission_df = pd.DataFrame([], columns=["ID", "Production"])
 
-    if not os.path.isfile(output_folder + "submission_{}.csv".format(alg)):
+    if not os.path.isfile(output_folder + "submission.csv".format(alg)):
         submission_df = submission_df.append(df_pred, ignore_index=True)
         submission_df.to_csv(
-            output_folder + "submission_{}.csv".format(alg), index=False, sep=","
+            output_folder + "submission.csv".format(alg), index=False, sep=","
         )
     else:
         submission_df = submission_df.append(df_pred, ignore_index=True,)
         submission_df.to_csv(
-            output_folder + "submission_{}.csv".format(alg),
+            output_folder + "submission.csv".format(alg),
             index=False,
             sep=",",
             mode="a",

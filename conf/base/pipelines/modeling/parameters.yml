@@ -24,7 +24,7 @@ knn_hypms:
   max_n_neighbors: 50
   algorithm: ["kd_tree", "ball_tree"]
   weights: ["uniform", "distance"]
-  metric: ["cityblock", "euclidean", "manhattan"]
+  metric: ["euclidean", "manhattan"]
 
 svm_hypms:
   kernel: ["linear", "rbf", "poly"]

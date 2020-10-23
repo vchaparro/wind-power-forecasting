@@ -403,10 +403,11 @@ def show_feature_importance(
         labels=features,
         size=(1080, 720),
         title="Importancia de variables",
+        
     )
 
     visualizer.fit(X, y, random_state=0)
     visualizer.show(outpath=data_dst + "figures/" + wf + "/feature_importance.png",)
-    # visualizer.show(clear_figure=True)
+    visualizer.show(clear_figure=True)
 
     mlflow.log_artifacts(data_dst + "figures/" + wf)

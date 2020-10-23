@@ -1,8 +1,4 @@
-### Post-feature engineering data prepared for ML ###
-predictions:
-  type: pickle.PickleDataSet
-  filepath: data/predictions.pickle
-  backend: pickle
+### Post-feature engineering data prepared for ML ##
 
 X_train_pped_WF1:
   type: pickle.PickleDataSet
