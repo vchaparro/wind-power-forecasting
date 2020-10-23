@@ -13,7 +13,7 @@ mlflow_tracking_uri: mlruns
 # where the runs are recorded). Change the name to
 # switch between different experiments
 experiment:
-  name: "Forecasting horizons"
+  name: "Experiment name"
   create: True # if the specified `name` does not exists, should it be created?
 
 # RUN-RELATED PARAMETERS -----------------

@@ -1,20 +1,20 @@
-import pandas as pd
-from functools import wraps
-from typing import Callable, Dict, List
-import time
-import logging
-import numpy as np
-from pathlib import Path
 import datetime as dt
+import logging
 import os
 import re
+import time
+from functools import wraps
+from pathlib import Path
+from typing import Callable, Dict, List
+
+import matplotlib.pyplot as plt
+import mlflow
+import numpy as np
+import pandas as pd
+from kedro.framework import context
 from metpy import calc
 from metpy.units import units
-import matplotlib.pyplot as plt
-from operational_analysis.toolkits import filters
-from operational_analysis.toolkits import power_curve
-from kedro.framework import context
-import mlflow
+from operational_analysis.toolkits import filters, power_curve
 
 
 def log_running_time(func: Callable) -> Callable:
@@ -75,7 +75,6 @@ def _plot_flagged_pc(ws, p, flag_bool, alpha):
     plt.scatter(ws[flag_bool], p[flag_bool], s=3, c="red")
     plt.xlabel("velocidad (m/s)", fontsize=20)
     plt.ylabel("potencia (MWh)", fontsize=20)
-    plt.show()
 
 
 def get_data_by_wf(X: pd.DataFrame, y: pd.Series, wf: str) -> pd.DataFrame:
@@ -354,7 +353,7 @@ def _find_outliers(X: pd.DataFrame, y: pd.Series, wf: str, *args) -> Dict[str, l
     _save_fig(
         fig_id, ctx.params.get("folder").get("rep") + "figures/" + wf + "/",
     )
-
+    plt.show()
     plt.close()
 
     # Populate the dictionary
@@ -449,4 +448,3 @@ def export_data(folder: str, WF: str, X_train, X_test, y_train, sets) -> None:
         folder + "{}/{}.csv".format(WF, "y_train"), index=False, header=False
     )
     y_test.to_csv(folder + "{}/{}.csv".format(WF, "y_test"), index=False, header=False)
-

@@ -1,5 +1,6 @@
 from kedro.pipeline import Pipeline, node
-from .nodes import create_model, test_model, get_model_plots
+
+from .nodes import create_model, get_model_plots, test_model
 
 
 def create_pipeline(**kwargs):

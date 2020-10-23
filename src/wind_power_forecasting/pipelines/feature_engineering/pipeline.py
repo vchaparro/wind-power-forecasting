@@ -1,5 +1,6 @@
 from kedro.pipeline import Pipeline, node
-from .nodes import feature_engineering, show_feature_importance, save_prepared_data
+
+from .nodes import feature_engineering, save_prepared_data, show_feature_importance
 
 
 def create_pipeline(**kwargs):
@@ -15,11 +16,7 @@ def create_pipeline(**kwargs):
                     "params:add_inv_T",
                     "params:add_interactions",
                 ],
-                outputs=[
-                    "X_train_pped",
-                    "X_test_pped",
-                    "feature_names",
-                ],
+                outputs=["X_train_pped", "X_test_pped", "feature_names",],
                 name="feature_engineering",
             ),
             node(

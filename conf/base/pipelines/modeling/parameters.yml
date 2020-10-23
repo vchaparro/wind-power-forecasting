@@ -1,4 +1,4 @@
-## Global parameters for create model node #
+## Global parameters for model building  ###
 ############################################
 alg: ""
 find_max_kbests: False
@@ -14,24 +14,29 @@ val_score_plot: "neg_mean_absolute_error"
 
 ## Model hyperparameters #
 ##########################
+
+# MARS
 mars_hypms:
   max_degree: [1, 2, 3]
   allow_linear: [False, True]
   penalty: [3., 3.67, 4.33, 5., 5.67, 6.33, 7.]
   max_terms: [24, 27, 30, 33, 36]
 
+# KNN
 knn_hypms:
   max_n_neighbors: 50
   algorithm: ["kd_tree", "ball_tree"]
   weights: ["uniform", "distance"]
   metric: ["euclidean", "manhattan"]
 
+# SVM
 svm_hypms:
   kernel: ["linear", "rbf", "poly"]
   C: [0.1, 5, 10, 15, 20]
   gamma: [0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4]
   epsilon: [0.0001, 0.001, 0.01, 1]
 
+# RF
 rf_hypms:
   n_estimators: [30, 33, 36, 39, 41, 44]
   max_depth: [5, 7, 9, 11, 13, 15]
@@ -39,6 +44,7 @@ rf_hypms:
   min_samples_leaf: [0.00001, 0.0001, 0.001, 0.01]
   # max_features: [2, 3, 4, 5]
 
+# ANN
 ann_hypms:
   n_hidden: [2]
   max_n_neurons: 83

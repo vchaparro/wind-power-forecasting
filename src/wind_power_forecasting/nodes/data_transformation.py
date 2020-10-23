@@ -333,8 +333,8 @@ def add_wind_vars(df, regex):
             inplace=True,
         )
 
-        df["NWP" + nwp + "_wvel"] = sub_df.apply(get_wind_velmod, axis=1)
-        df["NWP" + nwp + "_wdir"] = sub_df.apply(get_wind_dir, axis=1)
+        df["NWP" + nwp + "_wvel"] = sub_df.apply(_get_wind_speed, axis=1)
+        df["NWP" + nwp + "_wdir"] = sub_df.apply(_get_wind_dir, axis=1)
         df["NWP" + nwp + "_wdir_sin"] = np.sin(
             2 * np.pi * df["NWP" + nwp + "_wdir"] / 360
         )
@@ -363,8 +363,8 @@ def add_time_vars(df, time_col):
     df["hour"] = df[time_col].dt.hour
     df["month"] = df[time_col].dt.month
 
-    encode_cyclic(df, "hour", 24)
-    encode_cyclic(df, "month", 12)
+    _encode_cyclic(df, "hour", 24)
+    _encode_cyclic(df, "month", 12)
 
     return df
 

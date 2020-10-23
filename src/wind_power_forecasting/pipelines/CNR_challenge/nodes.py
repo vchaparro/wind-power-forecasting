@@ -180,32 +180,14 @@ def select_best_NWP_features(
     """
 
     # Select the best NWP predictions for weather predictors
-    """X_train["U"] = (
-        X_train.NWP1_U + X_train.NWP2_U + X_train.NWP3_U + X_train.NWP4_U
-    ) / 4
-    X_train["V"] = (
-        X_train.NWP1_V + X_train.NWP2_V + X_train.NWP3_V + X_train.NWP4_V
-    ) / 4
+    X_train["U"] = (X_train.NWP1_U + X_train.NWP2_U + X_train.NWP3_U) / 3
+    X_train["V"] = (X_train.NWP1_V + X_train.NWP2_V + X_train.NWP3_V) / 3
     X_train["T"] = (X_train.NWP1_T + X_train.NWP3_T) / 2
     X_train["CLCT"] = X_train.NWP4_CLCT
 
-    X_test["U"] = (X_test.NWP1_U + X_test.NWP2_U + X_test.NWP3_U + X_test.NWP4_U) / 4
-    X_test["V"] = (X_test.NWP1_V + X_test.NWP2_V + X_test.NWP3_V + X_test.NWP4_V) / 4
+    X_test["U"] = (X_test.NWP1_U + X_test.NWP2_U + X_test.NWP3_U) / 3
+    X_test["V"] = (X_test.NWP1_V + X_test.NWP2_V + X_test.NWP3_V) / 3
     X_test["T"] = (X_test.NWP1_T + X_test.NWP3_T) / 2
-    X_test["CLCT"] = X_test.NWP4_CLCT
-
-    # Select final features
-    X_train = X_train[["ID", "Time", "U", "V", "T", "CLCT"]]
-    X_test = X_test[["ID", "Time", "U", "V", "T", "CLCT"]]"""
-
-    X_train["U"] = X_train.NWP1_U
-    X_train["V"] = X_train.NWP1_V
-    X_train["T"] = X_train.NWP1_T
-    X_train["CLCT"] = X_train.NWP4_CLCT
-
-    X_test["U"] = X_test.NWP1_U
-    X_test["V"] = X_test.NWP1_V
-    X_test["T"] = X_test.NWP1_T
     X_test["CLCT"] = X_test.NWP4_CLCT
 
     # Select final features
@@ -430,8 +412,7 @@ def train_model(alg: str, wf: str) -> object:
 
 
 def predict(wf: str, model: object, output_folder: str, alg: str) -> np.ndarray:
-    """Predicts energy power production using
-    on testing data of CNR
+    """Predicts energy power production on testing data of CNR
 
     Args:
         wf: wind darm identificator.

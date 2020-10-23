@@ -347,10 +347,11 @@ def show_feature_importance(
 
     Args:
         wf: Wind Farm identification.
-        data_sr: location of data files.
+        data_src: location of data files.
+        data_dst: plots location
         X: features data set.
         feature_names: the name of the features in X.
-        k: the number of features to return.
+        k_best: the number of features to return.
 
     Returns:
         A descending ordered list of the k best features.
@@ -403,7 +404,6 @@ def show_feature_importance(
         labels=features,
         size=(1080, 720),
         title="Importancia de variables",
-        
     )
 
     visualizer.fit(X, y, random_state=0)

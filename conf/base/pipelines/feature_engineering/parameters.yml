@@ -1,3 +1,5 @@
+# parameters  to control the new feature adder object
+
 k_best: "all"
 add_cycl_feat: False
 add_interactions: False

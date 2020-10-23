@@ -8,7 +8,6 @@ from functools import wraps
 from pathlib import Path
 from typing import Callable, Dict, List
 
-
 import cufflinks as cf
 import matplotlib.pyplot as plt
 import mlflow
@@ -33,7 +32,7 @@ from sklearn.metrics.scorer import make_scorer
 from sklearn.model_selection import GridSearchCV, TimeSeriesSplit
 from sklearn.neighbors import DistanceMetric, KNeighborsRegressor
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import PowerTransformer, MinMaxScaler, StandardScaler
+from sklearn.preprocessing import MinMaxScaler, PowerTransformer, StandardScaler
 from sklearn.svm import SVR
 from tensorflow import keras
 from yellowbrick.model_selection import RFECV, CVScores, LearningCurve, ValidationCurve
@@ -48,7 +47,7 @@ from wind_power_forecasting.pipelines.feature_engineering.nodes import (
 setattr(plotly.offline, "__PLOTLY_OFFLINE_INITIALIZED", True)
 cf.set_config_file(offline=True)
 
-# Cross validation strategy taken from
+# Class for cross validation strategy taken from
 # https://hub.packtpub.com/cross-validation-strategies-for-time-series-forecasting-tutorial/
 
 
@@ -939,15 +938,15 @@ def _regression_plots(
     visualizer = ResidualsPlot(model, title=alg, is_fitted=True)
     visualizer.fit(X_train, y_train)
     visualizer.score(X_test, y_test)
-    visualizer.show(outpath=dest_folder + "residual_plots.png", clear_figure=True),
-    # visualizer.show(clear_figure=True)
+    visualizer.show(outpath=dest_folder + "residual_plots.png"),
+    visualizer.show(clear_figure=True)
 
     # Prediction error plot
     visualizer = PredictionError(model, title=alg, is_fitted=True)
     visualizer.fit(X_train, y_train)
     visualizer.score(X_test, y_test)
-    visualizer.show(outpath=dest_folder + "prediction_error.png", clear_figure=True)
-    # visualizer.show(clear_figure=True)
+    visualizer.show(outpath=dest_folder + "prediction_error.png")
+    visualizer.show(clear_figure=True)
 
 
 def _validation_plots(
@@ -1031,8 +1030,8 @@ def _validation_plots(
         )
 
     viz.fit(X_train, y_train)
-    viz.show(outpath=dest_folder + "validation_curves.png", clear_figure=True)
-    # viz.show(clear_figure=True)
+    viz.show(outpath=dest_folder + "validation_curves.png")
+    viz.show(clear_figure=True)
 
     # Learning curves
     visualizer = LearningCurve(
@@ -1043,8 +1042,8 @@ def _validation_plots(
         train_sizes=np.linspace(0.1, 1.0, 10),
     )
     visualizer.fit(X_train, y_train)
-    visualizer.show(outpath=dest_folder + "learning_curves.png", clear_figure=True)
-    # visualizer.show(clear_figure=True)
+    visualizer.show(outpath=dest_folder + "learning_curves.png")
+    visualizer.show(clear_figure=True)
 
     # Cross validation scores.
     visualizer = CVScores(
@@ -1054,8 +1053,8 @@ def _validation_plots(
         title="Errores en validación cruzada para {}".format(alg),
     )
     visualizer.fit(X_train, y_train)
-    visualizer.show(outpath=dest_folder + "cv_scores.png", clear_figure=True)
-    # visualizer.show(clear_figure=True)
+    visualizer.show(outpath=dest_folder + "cv_scores.png")
+    visualizer.show(clear_figure=True)
 
 
 def _time_series_plots(wf, predictions, dest_folder):
@@ -1102,7 +1101,11 @@ def _time_series_plots(wf, predictions, dest_folder):
         labels={"Time": "Fecha", "value": "Producción (MWh)"},
         template="plotly_white",
     )
+
     fig.write_image(dest_folder + "ts_predictions_plot.png")
+    real_pred.set_index("Time").iplot(
+        kind="scatter", filename="cufflinks/cf-simple-line", yTitle="Producción (MW)",
+    )
 
 
 def _feature_selection_plots(
