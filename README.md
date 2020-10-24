@@ -15,7 +15,7 @@ The main pipelines implemented are:
 1. Prepare data for EDA (`eda`). Transforms raw data into a proper format for Exploratory Data Analisys.
 2. Data engineering (`de`). Gets the data ready to be consumed by Machine Learning algorithms.
 3. Feature engineering (`fe`). Allows to explore and add new features to the data sets.
-4. Modeling (`mdl`). Trains the selected from among the following algorithms: MARS, KNN, RF, SVM. It aslo optimizes hyperparameters of the model and make predictions on the test set.
+4. Modeling (`mdl`). Trains the selected algorithm from among the following: MARS, KNN, RF, SVM. It aslo optimizes hyperparameters of the model and make predictions on the test set.
 
 There are other two additional pipelines:
 1. CNR pipeline. It contains several subpipelines to get predictions and submission file for the CNR Data Science Challege.
