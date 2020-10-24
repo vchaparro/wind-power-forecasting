@@ -25,7 +25,7 @@ There are other two additional pipelines:
 There are configuration files for every pipeline consisting on `prameters.yml` and `catalog.yml` yaml files. The first one contains all the parameters needed for the pipeline run. The second is the project-shareable Data Catalog.  It's a registry of all data sources available for use by the project and it manages loading and saving of data. Both configuration files are located at `conf/base`.
 
 ## CLI commands
-As a kedro application, you can use the CLI to run the pipelines, among all other options you can check in kedro documentation. To run the main pipelines of this project these are some basic command examples, choosing the Wind Farm  (`wf`) and the algorithm (`alg`) to buil the model:
+As a kedro application, the CLI can be used to run pipelines, among all other options you can check in kedro documentation. To run the main pipelines of this project these are some basic command examples, choosing the Wind Farm  (`wf`) and the algorithm (`alg`) to buil the model:
 1. Prepare data for EDA: `kedro run --pipeline eda --params wf:WF1,alg:KNN`
 2. Data engineering: `kedro run --pipeline de --params wf:WF1`
 3. Feature engineering: `kedro run --pipeline fe --params wf:WF1,max_k_bests:3`
@@ -33,11 +33,17 @@ As a kedro application, you can use the CLI to run the pipelines, among all othe
 
 You can overrite any parameter value defined in parameter configuration files, as well as the the data set used as the first input whenever it is defined in any of the existing data catalogs. 
 
+**Important**: It's necessary to put raw data in `data/01_raw/`. Raw data is available [here](https://challengedata.ens.fr/challenges/34) (free registration for the challenge is required).
+
+
 ## Pipeline visualization
-Using the pluging  `kedro-viz` by running `kedro viz`, you'll visualize  data and machine-learning pipelines. For instance, this is de visualization of data enegineering pipeline:
+Using the pluging `kedro-viz` (need to be installed) by running `kedro viz`, you'll visualize  data and machine-learning pipelines. For instance, this is de visualization of data enegineering pipeline:
 
 <img src="viz/pip-de.png" width="500">
 
 
+## Other useful commands
+* Mlflow trancking ui: `kedro mlflow ui`. It serves the trancking tool as a web on localhost (by default port 5000)
+* Jupyter notebook: `kedro jupyter notebook`. It lauches jupyter notebook loading all the kedro context variables so you can easily access pipelines, data catalogs, parameters and many other useful stuffs from your notebook.
 
 
