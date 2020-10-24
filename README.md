@@ -46,4 +46,7 @@ Using the pluging `kedro-viz` (need to be installed) by running `kedro viz`, you
 * Mlflow trancking ui: `kedro mlflow ui`. It serves the tracking tool as a web on localhost (by default port 5000)
 * Jupyter notebook: `kedro jupyter notebook`. It lauches jupyter notebook loading all the kedro context variables so you can easily access pipelines, data catalogs, parameters and many other useful stuffs from your notebook.
 
+To use `mlflow ui` you need to install the plugin [kedro-mlflow](https://github.com/Galileo-Galilei/kedro-mlflow).
+
+
 
