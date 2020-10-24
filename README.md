@@ -22,7 +22,7 @@ There are other two additional pipelines:
 2. Neural Networks. In progress ...
 
 ## Configuration files
-There are configuration files for every pipeline consisting on `prameters.yml` and `catalog.yml` yaml files. The first one contains all the parameters needed for the pipeline run. The second is the project-shareable Data Catalog.  It's a registry of all data sources available for use by the project and it manages loading and saving of data. Both configuration files are located at `conf/base`.
+There are configuration files for every pipeline consisting of `prameters.yml` and `catalog.yml` yaml files. The first one contains all the parameters needed for the pipeline run. The second is the project-shareable Data Catalog.  It's a registry of all data sources available for use by the project and it manages loading and saving of data. Both configuration files are located at `conf/base`.
 
 ## CLI commands
 As a kedro application, the CLI can be used to run pipelines, among all other options you can check in kedro documentation. To run the main pipelines of this project these are some basic command examples, choosing the Wind Farm  (`wf`) and the algorithm (`alg`) to buil the model:
