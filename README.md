@@ -8,7 +8,7 @@ This repository contains the source code of my Final Master's degree project in 
 This application is intended to be a flexible and configurable tool in order to easily build and analyze models for this forecasting problem. It is based on [Kedro](https://kedro.readthedocs.io/en/stable/index.html) API for the sake of applying software engineering best practices to data and machine-learning pipelines. [MLflow tracking](https://mlflow.org/) is used to record and query experiments (code, data, config, and results).
 
 ## Instalation
-The needed packages to re-create the necessary conda environment are listed in `./requirements.txt`.
+The packages to re-create the necessary conda environment are listed in `./requirements.txt`.
 
 ## Implemented pipelines
 The main pipelines implemented are:
@@ -22,10 +22,10 @@ There are other two additional pipelines:
 2. Neural Networks. In progress ...
 
 ## Configuration files
-There are configuration files for every pipeline consisting of `prameters.yml` and `catalog.yml` yaml files. The first one contains all the parameters needed for the pipeline run. The second is the project-shareable Data Catalog.  It's a registry of all data sources available for use by the project and it manages loading and saving of data. Both configuration files are located at `conf/base`.
+There are configuration files for every pipeline consisting of `prameters.yml` and `catalog.yml` files. The first one contains all the parameters required for the pipeline run. The second is the project-shareable Data Catalog.  It's a registry of all data sources available for use by the project and it manages loading and saving of data. Both configuration files are located at `conf/base`.
 
 ## CLI commands
-As a kedro application, the CLI can be used to run pipelines, among all other options you can check in kedro documentation. To run the main pipelines of this project these are some basic command examples, choosing the Wind Farm  (`wf`) and the algorithm (`alg`) to buil the model:
+As a kedro application, the CLI can be used to run pipelines, among all other options you can check in kedro documentation. To run the main pipelines of this project these are some basic command examples, choosing the Wind Farm  (`wf`) and the algorithm (`alg`) to build the model:
 1. Prepare data for EDA: `kedro run --pipeline eda --params wf:WF1,alg:KNN`
 2. Data engineering: `kedro run --pipeline de --params wf:WF1`
 3. Feature engineering: `kedro run --pipeline fe --params wf:WF1,max_k_bests:3`
@@ -44,7 +44,7 @@ Using the plugin `kedro-viz` (need to be installed) by running `kedro viz`, you'
 
 ## Other useful commands
 * Mlflow trancking ui: `kedro mlflow ui`. It serves the tracking tool as a web on localhost (by default port 5000)
-* Jupyter notebook: `kedro jupyter notebook`. It lauches jupyter notebook loading all the kedro context variables so you can easily access pipelines, data catalogs, parameters and many other useful stuffs from your notebook.
+* Jupyter notebook: `kedro jupyter notebook`. It lauches jupyter notebook loading all the kedro context variables so you can easily access pipelines, data catalogs, parameters and many other useful stuff from your notebook.
 
 To use `mlflow ui` you need to install the plugin [kedro-mlflow](https://github.com/Galileo-Galilei/kedro-mlflow).
 
