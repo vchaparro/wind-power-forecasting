@@ -1,6 +1,6 @@
 # Wind Power Forecasting - Application tool
 
-This repository contains the source code of my Final Master's degree project in [Decision Systems Engineering](https://www.urjc.es/estudios/master/915-ingenieria-de-sistemas-de-decision), titled *Wind Power Forecasting using Machine Learning techniques*, coursed in Rey Juan Carlos University. It is based on the [Data Science challenge](https://challengedata.ens.fr/participants/challenges/34/) posed by the *Compagnie nationale du Rhône* ([CNR](https://www.cnr.tm.fr/)). For further information you can read the [dissertation](dissertation.pdf) (spanish).
+This repository contains the source code of my Final Master's degree project in [Decision Systems Engineering](https://www.urjc.es/estudios/master/915-ingenieria-de-sistemas-de-decision), titled *Wind Power Forecasting using Machine Learning techniques*, coursed in Rey Juan Carlos University. It is based on the [Data Science challenge](https://challengedata.ens.fr/participants/challenges/34/) posed by the *Compagnie nationale du Rhône*. 
 
 
 
@@ -18,7 +18,7 @@ The main pipelines implemented are:
 4. Modeling (`mdl`). Trains the selected algorithm from among the following: MARS, KNN, RF, SVM. It aslo optimizes model hyperparameters and make predictions on the test set.
 
 There are other two additional pipelines:
-1. CNR pipeline. It contains several subpipelines to get predictions and submission file for the CNR Data Science Challege.
+1. CNR pipeline. It contains several subpipelines to get predictions and submission file for the CNR Data Science Challenge.
 2. Neural Networks. In progress ...
 
 ## Configuration files
