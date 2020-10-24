@@ -1,10 +1,32 @@
-# Wind Power Forecasting
+# Wind Power Forecasting - Application tool
 
-This repository contains the source code of my Final Master's degree project in [Decision Systems Engineering](https://www.urjc.es/estudios/master/915-ingenieria-de-sistemas-de-decision), titled *Wind Power Forecasting using Machine Learning techniques*, coursed in Rey Juan Carlos University. 
-
-
-
-## Overview
+This repository contains the source code of my Final Master's degree project in [Decision Systems Engineering](https://www.urjc.es/estudios/master/915-ingenieria-de-sistemas-de-decision), titled *Wind Power Forecasting using Machine Learning techniques*, coursed in Rey Juan Carlos University. It is based on the [Data Science challenge](https://challengedata.ens.fr/participants/challenges/34/) posed by the *Compagnie nationale du Rhône* ([CNR](https://www.cnr.tm.fr/). For further information you can read the [dissertation](dissertation.pdf) (spanish).
 
 
 
+## Introduction
+This application is intented to be a flexible and configurable tool in order to easily build and analyze models for this forecasting problem. It is based on [Kedro](https://kedro.readthedocs.io/en/stable/index.html) API for the sake of applying software engineering best practices to data and machine-learning pipelines. [MLflow tracking](https://mlflow.org/) is used to record and query experiments (code, data, config, and results).
+
+## Instalation
+
+## Implemented pipelines
+
+The main pipelines implemented are:
+1. Prepare data for EDA (`eda`). Transforms raw data into a proper format for Exploratory Data Analisys.
+2. Data engineering (`de`). Gets the data ready to be consumed by Machine Learning algorithms.
+3. Feature engineering (`fe`). Allows to explore and add new features to the data sets.
+4. Modeling (`mdl`). Trains the selected from among the following algorithms: MARS, KNN, RF, SVM. It aslo optimizes hyperparameters of the model and make predictions on the test set.
+
+There are other two additional pipelines:
+1. CNR pipeline. It contains several subpipelines to get predictions and submission file for the CNR Data Science Challege.
+2. Neural Networks. In progress ...
+
+## Configuration files
+There are configuration files for every pipeline consisting on `prameters.yml` and `catalog.yml` yaml files. The first one contains all the parameters needed for the pipeline run. The second is the project-shareable Data Catalog.  It's a registry of all data sources available for use by the project and it manages loading and saving of data. Both configuration files are located at `conf/base`.
+
+## CLI commands
+As a kedro application, you can use the CLI to run the pipelines, among all other options you can check in kedro documentation. To run the main pipelines of this project these are some basic command examples, choosing the Wind Farm  (`wf`) and the algorithm (`alg`) to buil the model:
+1. Prepare data for EDA: `kedro run --pipeline eda --params wf:WF1,alg:KNN`
+2. Data engineering: `kedro run --pipeline de --params wf:WF1`
+3. Feature engineering: `kedro run --pipeline fe --params wf:WF1,max_k_bests:3`
+4. Modeling: `kedro run --piepeline mdl --params wf:WF1,alg:KNN`
