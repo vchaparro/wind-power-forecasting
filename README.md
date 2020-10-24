@@ -1,6 +1,6 @@
 # Wind Power Forecasting - Application tool
 
-This repository contains the source code of my Final Master's degree project in [Decision Systems Engineering](https://www.urjc.es/estudios/master/915-ingenieria-de-sistemas-de-decision), titled *Wind Power Forecasting using Machine Learning techniques*, coursed in Rey Juan Carlos University. It is based on the [Data Science challenge](https://challengedata.ens.fr/participants/challenges/34/) posed by the *Compagnie nationale du Rhône* ([CNR](https://www.cnr.tm.fr/). For further information you can read the [dissertation](dissertation.pdf) (spanish).
+This repository contains the source code of my Final Master's degree project in [Decision Systems Engineering](https://www.urjc.es/estudios/master/915-ingenieria-de-sistemas-de-decision), titled *Wind Power Forecasting using Machine Learning techniques*, coursed in Rey Juan Carlos University. It is based on the [Data Science challenge](https://challengedata.ens.fr/participants/challenges/34/) posed by the *Compagnie nationale du Rhône* ([CNR](https://www.cnr.tm.fr/)). For further information you can read the [dissertation](dissertation.pdf) (spanish).
 
 
 
@@ -36,7 +36,7 @@ You can overrite any parameter value defined in parameter configuration files, a
 ## Pipeline visualization
 Using the pluging  `kedro-viz` by running `kedro viz`, you'll visualize  data and machine-learning pipelines. For instance, this is de visualization of data enegineering pipeline:
 
-![alt text](http://url/to/img.png)
+![alt text](viz/pip-de.png)
 
 
 
