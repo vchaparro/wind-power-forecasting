@@ -11,7 +11,6 @@ This application is intended to be a flexible and configurable tool in order to 
 The needed packages to re-create the necessary conda environment are listed in `./requirements.txt`.
 
 ## Implemented pipelines
-
 The main pipelines implemented are:
 1. Prepare data for EDA (`eda`). Transforms raw data into a proper format for Exploratory Data Analisys.
 2. Data engineering (`de`). Gets the data ready to be consumed by Machine Learning algorithms.
