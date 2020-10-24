@@ -30,3 +30,13 @@ As a kedro application, you can use the CLI to run the pipelines, among all othe
 2. Data engineering: `kedro run --pipeline de --params wf:WF1`
 3. Feature engineering: `kedro run --pipeline fe --params wf:WF1,max_k_bests:3`
 4. Modeling: `kedro run --piepeline mdl --params wf:WF1,alg:KNN`
+
+You can overrite any parameter value defined in parameter configuration files, as well as the the data set used as the first input whenever it is defined in any of the existing data catalogs. 
+
+## Pipeline visualization
+Using the pluging  `kedro-viz` by running `kedro viz`, you'll visualize  data and machine-learning pipelines. For instance, this is de visualization of data enegineering pipeline:
+
+![alt text](http://url/to/img.png)
+
+
+
