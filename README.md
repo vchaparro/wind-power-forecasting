@@ -2,7 +2,7 @@
 
 This repository contains the source code of my Final Master's degree project in [Decision Systems Engineering](https://www.urjc.es/estudios/master/915-ingenieria-de-sistemas-de-decision), titled *Wind Power Forecasting using Machine Learning techniques*, coursed in Rey Juan Carlos University. It is based on the [Data Science challenge](https://challengedata.ens.fr/participants/challenges/34/) posed by the *Compagnie nationale du Rhône*. 
 
-For further information, you can read the master's thesis [here](dissertation.pdf).
+For further information, you can read the master's thesis [here](thesis.pdf).
 
 
 
