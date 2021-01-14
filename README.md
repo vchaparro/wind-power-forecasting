@@ -33,7 +33,7 @@ As a kedro application, the CLI can be used to run pipelines, among all other op
 3. Feature engineering: `kedro run --pipeline fe --params wf:WF1,max_k_bests:3`
 4. Modeling: `kedro run --piepeline mdl --params wf:WF1,alg:KNN`
 
-You can overrite any parameter value defined in parameter configuration files, as well as the the data set used as the first input whenever it is defined in any of the existing data catalogs. 
+You can overwrite any parameter value defined in parameter configuration files, as well as the the data set used as the first input whenever it is defined in any of the existing data catalogs. 
 
 **Important**: It's necessary to put raw data in `data/01_raw/`. Raw data is available [here](https://challengedata.ens.fr/challenges/34) (free registration for the challenge is required).
 
