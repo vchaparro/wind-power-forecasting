@@ -39,7 +39,7 @@ You can overwrite any parameter value defined in parameter configuration files, 
 
 
 ## Pipeline visualization
-Using the plugin `kedro-viz` (need to be installed) by running `kedro viz`, you'll visualize  data and machine-learning pipelines. For instance, this is the visualization of data enegineering pipeline:
+Using the plugin `kedro-viz` (need to be installed) by running `kedro viz`, you'll visualize  data and machine-learning pipelines. For instance, this is the visualization of the data enegineering pipeline:
 
 <img src="viz/pip-de.png" width="500">
 
