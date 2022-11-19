@@ -28,7 +28,7 @@ There are configuration files for every pipeline consisting of `prameters.yml` a
 
 ## CLI commands
 As a kedro application, the CLI can be used to run pipelines, among all other options you can check in kedro documentation. To run the main pipelines of this project these are some basic command examples, choosing the Wind Farm  (`wf`) and the algorithm (`alg`) to build the model:
-1. Prepare data for EDA: `kedro run --pipeline eda --params wf:WF1,alg:KNN`
+1. Prepare data for EDA: `kedro run --pipeline eda --params wf:WF1`
 2. Data engineering: `kedro run --pipeline de --params wf:WF1`
 3. Feature engineering: `kedro run --pipeline fe --params wf:WF1,max_k_bests:3`
 4. Modeling: `kedro run --piepeline mdl --params wf:WF1,alg:KNN`
